@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📖 Bible Quiz Deluxe</title>
+<style>
+/* ================= VARIABLES & THÈMES ================= */
+:root {
+  --bg-color: #0f172a;
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text: #f8fafc;
+  --text-dim: #94a3b8;
+  --accent: #38bdf8;
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+[data-theme="light"] {
+  --bg-color: #f1f5f9;
+  --glass: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --text: #0f172a;
+  --text-dim: #64748b;
+  --accent: #0284c7;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #d97706;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', 'Poppins', system-ui, -apple-system, sans-serif; }
+
+body {
+  min-height: 100vh;
+  color: var(--text);
+  background-color: var(--bg-color);
+  transition: background-color 0.4s ease, color 0.4s ease;
+  overflow-x: hidden;
+  padding: 20px;
+}
+
+.container {
+  max-width: 700px;
+  margin: 40px auto;
+  background: var(--glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+  animation: slideUp 0.5s ease;
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+h1 { font-size: 2.2rem; font-weight: 800; text-align: center; margin-bottom: 10px; color: var(--accent); }
+.subtitle { text-align: center; color: var(--text-dim); margin-bottom: 30px; }
+
+.error-msg{
+  background: rgba(239,68,68,0.12);
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  margin: -10px 0 18px;
+  text-align: center;
+}
+
+/* ================= ONGLETS ================= */
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 28px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 6px;
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-dim);
+  padding: 12px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.25s;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.tab-btn .tab-icon { font-size: 1.3rem; }
+.tab-btn:hover { color: var(--text); background: rgba(128,128,128,0.08); }
+.tab-btn.active { background: var(--accent); color: #fff; }
+
+.btn {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text);
+  padding: 14px 24px;
+  border-radius: 14px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
+.btn-primary { background: var(--accent); color: #fff; border: none; }
+.btn-success { background: var(--success); color: #fff; border: none; }
+.btn-danger { background: var(--danger); color: #fff; border: none; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+.btn-full { grid-column: 1 / -1; }
+
+input[type="text"] {
+  width: 100%;
+  padding: 14px 20px;
+  background: var(--glass);
+  border: 2px solid var(--glass-border);
+  border-radius: 14px;
+  color: var(--text);
+  font-size: 1rem;
+  margin: 10px 0 20px;
+  transition: all 0.3s;
+}
+input[type="text"]:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2); }
+input::placeholder { color: var(--text-dim); }
+
+.category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; }
+.mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 20px 0; }
+
+.cat-btn {
+  padding: 16px 10px;
+  background: var(--glass);
+  border: 2px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  text-align: center;
+  font-weight: 600;
+  color: var(--text);
+}
+.cat-btn:hover { background: rgba(128, 128, 128, 0.1); }
+.cat-btn.active { border-color: var(--accent); background: rgba(56, 189, 248, 0.1); color: var(--accent); }
+.cat-btn .icon { font-size: 2rem; display: block; margin-bottom: 6px; }
+
+.game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+.lives { display: flex; gap: 6px; font-size: 1.5rem; }
+.heart { transition: all 0.3s; }
+.heart.lost { filter: grayscale(1) opacity(0.3); transform: scale(0.8); }
+
+.combo {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  color: #fff;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  animation: pulse 1s infinite;
+}
+@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+.timer-wrap { position: relative; width: 70px; height: 70px; margin: 0 auto 10px; }
+.timer-svg { transform: rotate(-90deg); width: 100%; height: 100%; }
+.timer-bg { fill: none; stroke: var(--glass-border); stroke-width: 6; }
+.timer-fg { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1s linear, stroke 0.3s; }
+.timer-fg.warning { stroke: var(--warning); }
+.timer-fg.danger { stroke: var(--danger); }
+.timer-text { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.3rem; font-weight: 800; color: var(--text); }
+
+.progress { height: 8px; background: var(--glass-border); border-radius: 4px; overflow: hidden; margin: 15px 0; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.5s ease; border-radius: 4px; }
+
+.question { font-size: 1.25rem; font-weight: 600; text-align: center; margin: 25px 0; line-height: 1.4; color: var(--text); }
+
+.options { display: flex; flex-direction: column; gap: 12px; }
+.option {
+  background: var(--glass);
+  border: 2px solid var(--glass-border);
+  color: var(--text);
+  padding: 16px 20px;
+  border-radius: 14px;
+  cursor: pointer;
+  font-size: 1rem;
+  text-align: left;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.option:hover:not(:disabled) { border-color: var(--accent); transform: translateX(4px); }
+.option .letter { background: rgba(128,128,128,0.15); color: var(--text); width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; flex-shrink: 0; }
+.option.correct { background: rgba(34, 197, 94, 0.15); border-color: var(--success); color: var(--success); }
+.option.incorrect { background: rgba(239, 68, 68, 0.15); border-color: var(--danger); color: var(--danger); animation: shake 0.4s ease; }
+.option.hidden { opacity: 0.2; pointer-events: none; text-decoration: line-through; }
+
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+.powerups { display: flex; justify-content: center; gap: 12px; margin: 20px 0; }
+.powerup {
+  background: var(--glass);
+  border: 2px solid var(--glass-border);
+  color: var(--text);
+  padding: 10px 18px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 600;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.powerup:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); }
+.powerup:disabled { opacity: 0.3; cursor: not-allowed; }
+.powerup .count { background: var(--accent); color: #fff; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 800; }
+
+.result-circle { width: 160px; height: 160px; margin: 20px auto; position: relative; }
+.result-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.result-circle .bg { fill: none; stroke: var(--glass-border); stroke-width: 12; }
+.result-circle .fg { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 2s ease; }
+.result-circle .pct { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 2.2rem; font-weight: 800; color: var(--text); }
+
+.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 20px 0; }
+.stats-grid-2 { grid-template-columns: 1fr 1fr; }
+.stat-card { background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; padding: 15px; text-align: center; }
+.stat-card .value { font-size: 1.6rem; font-weight: 800; color: var(--accent); }
+.stat-card .label { font-size: 0.8rem; color: var(--text-dim); margin-top: 4px; }
+
+.leaderboard { margin: 20px 0; }
+.lb-row { display: grid; grid-template-columns: 40px 1fr auto auto; align-items: center; gap: 12px; padding: 12px 16px; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; margin-bottom: 8px; transition: all 0.3s; }
+.lb-row:hover { transform: translateX(4px); border-color: var(--accent); }
+.lb-row.top-1 { border-left: 4px solid #fbbf24; }
+.lb-row.top-2 { border-left: 4px solid #94a3b8; }
+.lb-row.top-3 { border-left: 4px solid #b45309; }
+.lb-rank { font-size: 1.2rem; font-weight: 800; text-align: center; }
+.lb-name { font-weight: 600; color: var(--text); }
+.lb-score { color: var(--accent); font-weight: 700; }
+.lb-date { color: var(--text-dim); font-size: 0.8rem; }
+
+.theme-toggle {
+  position: fixed; top: 20px; right: 20px;
+  background: var(--glass); backdrop-filter: blur(10px);
+  border: 1px solid var(--glass-border);
+  width: 50px; height: 50px; border-radius: 50%;
+  cursor: pointer; font-size: 1.5rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s; z-index: 100; color: var(--text);
+}
+.theme-toggle:hover { transform: rotate(30deg) scale(1.1); }
+
+.badge { display: inline-block; padding: 4px 10px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; }
+.badge-at { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+.badge-nt { background: rgba(56, 189, 248, 0.15); color: var(--accent); }
+.badge-mix { background: rgba(139, 92, 246, 0.15); color: #8b5cf6; }
+.badge-ph { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+
+@media (max-width: 600px) {
+  body { padding: 12px; }
+  .container { padding: 22px 18px; margin: 12px auto; border-radius: 18px; }
+  h1 { font-size: 1.6rem; }
+  .subtitle { margin-bottom: 20px; }
+  .question { font-size: 1.05rem; margin: 18px 0; }
+
+  .theme-toggle { top: 12px; right: 12px; width: 42px; height: 42px; font-size: 1.2rem; }
+
+  .tabs { grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; }
+  .tab-btn { padding: 9px 4px; font-size: 0.7rem; }
+  .tab-btn .tab-icon { font-size: 1.1rem; }
+
+  .category-grid { grid-template-columns: 1fr; }
+  .mode-grid { grid-template-columns: 1fr; }
+  .btn-grid { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .stats-grid-2 { grid-template-columns: 1fr; }
+
+  .powerups { flex-direction: column; }
+  .powerup { justify-content: center; }
+
+  .game-header { gap: 6px; }
+  .timer-wrap { width: 58px; height: 58px; }
+  .timer-text { font-size: 1.05rem; }
+
+  .lb-row { grid-template-columns: 26px 1fr auto auto; gap: 8px; padding: 10px 12px; font-size: 0.85rem; }
+  .lb-row > div:nth-child(2) { min-width: 0; overflow: hidden; }
+  .lb-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; max-width: 100%; }
+  .lb-date { white-space: nowrap; }
+}
+
+@media (max-width: 380px) {
+  .tab-btn span:not(.tab-icon) { font-size: 0.62rem; }
+  h1 { font-size: 1.4rem; }
+  .cat-btn .icon { font-size: 1.6rem; }
+}
+</style>
+</head>
+<body>
+
+<button class="theme-toggle" id="theme-btn" title="Changer de thème">🌙</button>
+<div id="app"></div>
+
+<script>
+/* ============ BANQUE DE QUESTIONS (embarquée, pas de backend) ============ */
+const QUESTIONS_DB = [
+  { q: "Qui a construit l'arche avant le grand déluge ?", o: ["Moïse", "Noé", "Abraham", "Élie"], a: 1, cat: "AT" },
+  { q: "Combien de jours et de nuits a-t-il plu pendant le déluge ?", o: ["7", "12", "40", "100"], a: 2, cat: "AT" },
+  { q: "Qui a été avalé par un grand poisson ?", o: ["Jonas", "Pierre", "Job", "Samson"], a: 0, cat: "AT" },
+  { q: "Quel jeune berger a vaincu le géant Goliath ?", o: ["Saül", "Salomon", "Joseph", "David"], a: 3, cat: "AT" },
+  { q: "Qui a conduit les Israélites hors de l'esclavage en Égypte ?", o: ["Josué", "Moïse", "Aaron", "Jacob"], a: 1, cat: "AT" },
+  { q: "Quel est le premier livre de la Bible ?", o: ["Exode", "Genèse", "Psaumes", "Matthieu"], a: 1, cat: "AT" },
+  { q: "Qui a été jeté dans la fosse aux lions pour avoir prié Dieu ?", o: ["Daniel", "Jérémie", "Ésaïe", "Ézéchiel"], a: 0, cat: "AT" },
+  { q: "Qui a été le premier homme créé par Dieu ?", o: ["Abel", "Seth", "Caïn", "Adam"], a: 3, cat: "AT" },
+  { q: "Dans quelle ville Jésus est-il né ?", o: ["Nazareth", "Jérusalem", "Bethléem", "Capharnaüm"], a: 2, cat: "NT" },
+  { q: "Combien de disciples Jésus a-t-il choisis ?", o: ["7", "10", "12", "14"], a: 2, cat: "NT" },
+  { q: "Quel disciple a renié connaître Jésus trois fois ?", o: ["Pierre", "Jean", "Thomas", "André"], a: 0, cat: "NT" },
+  { q: "Quelle nourriture Jésus a-t-il utilisée pour nourrir cinq mille personnes ?", o: ["Du pain et du vin", "Cinq pains et deux poissons", "De la manne du ciel", "Des figues et du miel"], a: 1, cat: "NT" },
+  { q: "Quel disciple a trahi Jésus pour trente pièces d'argent ?", o: ["Judas Iscariote", "Matthieu", "Philippe", "Jacques"], a: 0, cat: "NT" },
+  { q: "Quel est le verset le plus court de la Bible ?", o: ["Dieu est amour.", "Jésus pleura.", "Priez sans cesse.", "Réjouissez-vous toujours."], a: 1, cat: "NT" },
+  { q: "Sur le chemin de quelle ville Paul s'est-il converti ?", o: ["Rome", "Corinthe", "Damas", "Éphèse"], a: 2, cat: "NT" },
+  { q: "Qui est le père de la nation d'Israël, appelé « ami de Dieu » ?", o: ["Abraham", "Isaac", "Jacob", "Moïse"], a: 0, cat: "PH" },
+  { q: "Quel patriarche a lutté toute une nuit avec un ange et a reçu le nom « Israël » ?", o: ["Esaü", "Jacob", "Joseph", "Ruben"], a: 1, cat: "PH" },
+  { q: "Quel héros biblique a tué un lion à mains nues avant d'affronter les Philistins ?", o: ["David", "Samson", "Gédéon", "Saül"], a: 1, cat: "PH" },
+  { q: "Quelle femme a caché les espions israélites à Jéricho ?", o: ["Rahab", "Ruth", "Esther", "Déborah"], a: 0, cat: "PH" },
+  { q: "Quelle femme juge a dirigé Israël et conseillé le général Barak ?", o: ["Miriam", "Déborah", "Esther", "Anne"], a: 1, cat: "PH" },
+  { q: "Qui a vaincu l'armée madianite avec seulement 300 hommes ?", o: ["Josué", "Gédéon", "Samson", "Saül"], a: 1, cat: "PH" },
+  { q: "Quelle reine a risqué sa vie pour sauver son peuple en Perse ?", o: ["Esther", "Ruth", "Judith", "Anne"], a: 0, cat: "PH" },
+  { q: "Quel roi est connu pour sa grande sagesse et pour avoir construit le Temple de Jérusalem ?", o: ["David", "Salomon", "Roboam", "Ezéchias"], a: 1, cat: "PH" },
+  { q: "Qui a interprété les rêves de Pharaon et est devenu gouverneur d'Égypte ?", o: ["Benjamin", "Ruben", "Joseph", "Juda"], a: 2, cat: "PH" },
+  { q: "Quel prophète a été enlevé au ciel dans un char de feu ?", o: ["Élisée", "Élie", "Ésaïe", "Jérémie"], a: 1, cat: "PH" },
+  { q: "Qui a fait tomber les murailles de Jéricho en en faisant le tour avec le peuple ?", o: ["Caleb", "Josué", "Aaron", "Moïse"], a: 1, cat: "PH" },
+  { q: "Quelle femme moabite est restée fidèle à sa belle-mère Naomi ?", o: ["Ruth", "Orpa", "Noémi", "Rachel"], a: 0, cat: "PH" },
+  { q: "Qui a tout perdu mais est resté fidèle à Dieu malgré une immense souffrance ?", o: ["Job", "Jonas", "Daniel", "Abraham"], a: 0, cat: "PH" },
+  { q: "Quel prophète a hérité du manteau et de l'esprit d'Élie ?", o: ["Élie", "Élisée", "Amos", "Osée"], a: 1, cat: "PH" },
+  { q: "Qui a conduit le peuple juif dans la reconstruction des murailles de Jérusalem ?", o: ["Esdras", "Néhémie", "Zorobabel", "Josias"], a: 1, cat: "PH" },
+  { q: "Quel prêtre-scribe a lu la Loi au peuple après le retour d'exil ?", o: ["Esdras", "Néhémie", "Malachie", "Aggée"], a: 0, cat: "PH" },
+  { q: "Qui a été le premier roi d'Israël, choisi par le prophète Samuel ?", o: ["David", "Saül", "Samuel", "Jonathan"], a: 1, cat: "PH" },
+  { q: "Quel fils du roi Saül a formé une amitié fidèle avec David ?", o: ["Absalom", "Jonathan", "Salomon", "Amnon"], a: 1, cat: "PH" },
+  { q: "Quelle prophétesse a chanté un cantique de victoire après la traversée de la mer Rouge ?", o: ["Miriam", "Séphora", "Rachel", "Léa"], a: 0, cat: "PH" },
+  { q: "Qui a été désigné pour parler à Pharaon à la place de Moïse, à cause de son éloquence ?", o: ["Aaron", "Josué", "Caleb", "Nadab"], a: 0, cat: "PH" },
+  { q: "Quel espion, avec Josué, a rapporté un bon rapport sur la terre promise ?", o: ["Caleb", "Guershom", "Éléazar", "Pinehas"], a: 0, cat: "PH" },
+  { q: "Qui a entendu la voix de Dieu l'appeler pendant son sommeil dans le tabernacle ?", o: ["Samuel", "Éli", "Saül", "Nathan"], a: 0, cat: "PH" },
+  { q: "Quel apôtre était surnommé « le Rocher » par Jésus ?", o: ["André", "Pierre", "Jacques", "Jean"], a: 1, cat: "PH" },
+  { q: "Qui, après avoir persécuté les chrétiens, est devenu l'un des plus grands apôtres ?", o: ["Barnabas", "Silas", "Paul", "Timothée"], a: 2, cat: "PH" },
+  { q: "Quel disciple bien-aimé de Jésus a écrit un évangile et le livre de l'Apocalypse ?", o: ["Jean", "Matthieu", "Marc", "Luc"], a: 0, cat: "PH" },
+  { q: "Quel homme a baptisé Jésus dans le Jourdain ?", o: ["Jean-Baptiste", "Pierre", "André", "Philippe"], a: 0, cat: "PH" },
+  { q: "Quelle femme a été choisie par Dieu pour être la mère de Jésus ?", o: ["Elisabeth", "Marie", "Marthe", "Marie-Madeleine"], a: 1, cat: "PH" },
+  { q: "Quel homme riche a offert son propre tombeau pour la sépulture de Jésus ?", o: ["Nicodème", "Joseph d'Arimathée", "Simon de Cyrène", "Lazare"], a: 1, cat: "PH" },
+  { q: "Quel jeune compagnon de Paul a reçu deux épîtres qui portent son nom ?", o: ["Tite", "Timothée", "Silas", "Épaphras"], a: 1, cat: "PH" },
+  { q: "Quel lévite a vendu son champ pour aider les apôtres, gagnant le surnom « fils d'encouragement » ?", o: ["Étienne", "Philippe", "Barnabas", "Apollos"], a: 2, cat: "PH" },
+  { q: "Combien de plaies Dieu envoie-t-Il sur l'Égypte avant que Pharaon ne libère les Israélites ?", o: ["7", "10", "12", "3"], a: 1, cat: "AT" },
+  { q: "Sur quelle montagne Moïse reçoit-il les Dix Commandements ?", o: ["Le mont Sinaï", "Le mont Ararat", "Le mont Nébo", "Le mont Carmel"], a: 0, cat: "AT" },
+  { q: "Quel objet sacré contient les tables de la Loi, un pot de manne et le bâton d'Aaron ?", o: ["L'arche de l'alliance", "Le chandelier d'or", "L'autel des parfums", "Le voile du sanctuaire"], a: 0, cat: "AT" },
+  { q: "Combien de commandements Dieu donne-t-il à Moïse sur le mont Sinaï ?", o: ["7", "10", "12", "40"], a: 1, cat: "AT" },
+  { q: "Quelle nourriture miraculeuse Dieu envoie-t-il chaque matin aux Israélites dans le désert ?", o: ["La manne", "Les cailles", "Le pain", "Le miel"], a: 0, cat: "AT" },
+  { q: "Combien de jours les Israélites font-ils le tour de Jéricho avant que ses murailles ne s'effondrent ?", o: ["3", "7", "12", "40"], a: 1, cat: "AT" },
+  { q: "Sous quel roi le royaume d'Israël se divise-t-il en deux, Israël et Juda ?", o: ["Roboam", "Salomon", "David", "Achab"], a: 0, cat: "AT" },
+  { q: "Quel empire déporte les habitants du royaume du Nord, Israël, en 722 av. J.-C. ?", o: ["L'Assyrie", "Babylone", "L'Égypte", "La Perse"], a: 0, cat: "AT" },
+  { q: "Quel empire détruit le Temple de Jérusalem et déporte le peuple de Juda ?", o: ["Babylone", "L'Assyrie", "La Perse", "La Grèce"], a: 0, cat: "AT" },
+  { q: "Quel roi perse autorise le retour des Juifs d'exil et la reconstruction du Temple ?", o: ["Cyrus", "Darius", "Xerxès", "Assurbanipal"], a: 0, cat: "AT" },
+  { q: "Quel livre de la Bible relate la création du monde en six jours ?", o: ["La Genèse", "L'Exode", "Job", "Les Psaumes"], a: 0, cat: "AT" },
+  { q: "Quel est le nom du jardin où Dieu place Adam et Ève ?", o: ["Éden", "Canaan", "Goshen", "Sinaï"], a: 0, cat: "AT" },
+  { q: "Quel fils d'Adam et Ève tue son frère Abel ?", o: ["Caïn", "Seth", "Hénoc", "Lémec"], a: 0, cat: "AT" },
+  { q: "Quel oiseau Noé envoie-t-il et qui revient avec un rameau d'olivier, signe que les eaux se retirent ?", o: ["Une colombe", "Un corbeau", "Un aigle", "Une hirondelle"], a: 0, cat: "AT" },
+  { q: "Quel signe Dieu place-t-il dans le ciel après le déluge, en symbole de son alliance ?", o: ["L'arc-en-ciel", "Une étoile", "Un nuage", "Le soleil"], a: 0, cat: "AT" },
+  { q: "Quelle tour les hommes tentent-ils de construire pour atteindre le ciel, provoquant la confusion des langues ?", o: ["La tour de Babel", "La tour de Siloé", "Le temple de Salomon", "La citadelle de David"], a: 0, cat: "AT" },
+  { q: "De quelle ville Abraham part-il pour rejoindre la terre promise ?", o: ["Ur", "Babylone", "Ninive", "Damas"], a: 0, cat: "AT" },
+  { q: "Dans quel pays Joseph devient-il gouverneur après avoir interprété les rêves de Pharaon ?", o: ["L'Égypte", "Canaan", "Madian", "L'Assyrie"], a: 0, cat: "AT" },
+  { q: "Combien d'années de famine Joseph prédit-il en Égypte ?", o: ["7", "10", "3", "40"], a: 0, cat: "AT" },
+  { q: "Quelle mer les Israélites traversent-ils à pied sec en fuyant l'Égypte ?", o: ["La mer Rouge", "La mer Morte", "La mer de Galilée", "La Méditerranée"], a: 0, cat: "AT" },
+  { q: "Quel livre biblique détaille les lois sur les sacrifices et la pureté rituelle d'Israël ?", o: ["Le Lévitique", "Les Nombres", "Le Deutéronome", "Josué"], a: 0, cat: "AT" },
+  { q: "Combien de tribus composent le peuple d'Israël ?", o: ["10", "12", "7", "40"], a: 1, cat: "AT" },
+  { q: "Quelle tribu d'Israël est mise à part pour le service du sanctuaire, sans territoire propre ?", o: ["Lévi", "Juda", "Benjamin", "Éphraïm"], a: 0, cat: "AT" },
+  { q: "Quel livre biblique raconte l'histoire d'un homme juste qui perd tout mais reste fidèle à Dieu ?", o: ["Job", "Ruth", "Esther", "Jonas"], a: 0, cat: "AT" },
+  { q: "Quel roi d'Israël est réputé pour sa sagesse, illustrée par le jugement entre deux femmes se disputant un enfant ?", o: ["Salomon", "David", "Saül", "Ézéchias"], a: 0, cat: "AT" },
+  { q: "Combien de proverbes le roi Salomon aurait-il composés, selon la tradition biblique ?", o: ["3000", "500", "100", "10000"], a: 0, cat: "AT" },
+  { q: "Combien de temps faut-il, selon la Bible, pour construire le Temple de Salomon ?", o: ["7 ans", "10 ans", "3 ans", "40 ans"], a: 0, cat: "AT" },
+  { q: "Quel livre de la Bible est un recueil de poèmes et de prières attribués en grande partie à David ?", o: ["Les Psaumes", "Les Proverbes", "L'Ecclésiaste", "Le Cantique des cantiques"], a: 0, cat: "AT" },
+  { q: "Quel psaume commence par « L'Éternel est mon berger, je ne manquerai de rien » ?", o: ["Le Psaume 23", "Le Psaume 1", "Le Psaume 51", "Le Psaume 100"], a: 0, cat: "AT" },
+  { q: "Quel livre, attribué à Salomon, s'ouvre sur « Vanité des vanités, tout est vanité » ?", o: ["L'Ecclésiaste", "Les Proverbes", "Le Cantique des cantiques", "Les Psaumes"], a: 0, cat: "AT" },
+  { q: "À quelle ville Dieu envoie-t-il le prophète Jonas prêcher la repentance ?", o: ["Ninive", "Babylone", "Tyr", "Damas"], a: 0, cat: "AT" },
+  { q: "Quel prophète voit une vision de la vallée des ossements desséchés qui reprennent vie ?", o: ["Ézéchiel", "Ésaïe", "Jérémie", "Daniel"], a: 0, cat: "AT" },
+  { q: "Quel prophète est surnommé « le prophète pleureur » à cause de ses lamentations sur Jérusalem ?", o: ["Jérémie", "Ésaïe", "Amos", "Osée"], a: 0, cat: "AT" },
+  { q: "Quel livre biblique porte le nom d'un prophète qui épouse une femme infidèle, en symbole de l'infidélité d'Israël ?", o: ["Osée", "Joël", "Amos", "Michée"], a: 0, cat: "AT" },
+  { q: "Quel prophète annonce que le Messie naîtrait à Bethléem ?", o: ["Michée", "Malachie", "Aggée", "Sophonie"], a: 0, cat: "AT" },
+  { q: "Quel est le dernier livre de l'Ancien Testament dans la Bible chrétienne ?", o: ["Malachie", "Zacharie", "Aggée", "Abdias"], a: 0, cat: "AT" },
+  { q: "Combien de livres compte l'Ancien Testament dans la Bible protestante ?", o: ["39", "27", "66", "46"], a: 0, cat: "AT" },
+  { q: "Quel peuple s'empare de l'arche de l'alliance lors d'une bataille contre Israël ?", o: ["Les Philistins", "Les Assyriens", "Les Babyloniens", "Les Égyptiens"], a: 0, cat: "AT" },
+  { q: "Combien de temps Samson juge-t-il Israël, selon le livre des Juges ?", o: ["20 ans", "40 ans", "12 ans", "7 ans"], a: 0, cat: "AT" },
+  { q: "Quel livre biblique suit celui des Juges et raconte l'histoire d'une femme moabite fidèle à sa belle-mère ?", o: ["Ruth", "Esther", "1 Samuel", "Josué"], a: 0, cat: "AT" },
+  { q: "Dans le livre d'Esther, quel est le nom du premier ministre perse qui complote pour exterminer les Juifs ?", o: ["Haman", "Mardochée", "Assuérus", "Memucan"], a: 0, cat: "AT" },
+  { q: "Quel roi perse épouse Esther et devient ainsi, indirectement, le sauveur du peuple juif ?", o: ["Assuérus", "Cyrus", "Darius", "Nabuchodonosor"], a: 0, cat: "AT" },
+  { q: "Quel patriarche voit en songe une échelle reliant la terre au ciel, avec des anges y montant et descendant ?", o: ["Jacob", "Abraham", "Isaac", "Joseph"], a: 0, cat: "AT" },
+  { q: "Combien d'années Jacob doit-il travailler pour Laban avant d'épouser Rachel ?", o: ["7 ans", "14 ans", "3 ans", "20 ans"], a: 0, cat: "AT" },
+  { q: "Combien de pièces d'argent les frères de Joseph reçoivent-ils pour le vendre ?", o: ["20", "30", "10", "40"], a: 0, cat: "AT" },
+  { q: "Quel est le nom de la terre promise aux descendants d'Abraham ?", o: ["Canaan", "L'Égypte", "Madian", "Aram"], a: 0, cat: "AT" },
+  { q: "Quelle ville David conquiert-il pour en faire la capitale de son royaume ?", o: ["Jérusalem", "Hébron", "Béthel", "Silo"], a: 0, cat: "AT" },
+  { q: "Quel fils de David se révolte contre son père et meurt suspendu par les cheveux dans un arbre ?", o: ["Absalom", "Amnon", "Salomon", "Adonija"], a: 0, cat: "AT" },
+  { q: "Quel livre biblique décrit la construction du tabernacle, la tente où Dieu rencontre son peuple dans le désert ?", o: ["L'Exode", "Le Lévitique", "Les Nombres", "Le Deutéronome"], a: 0, cat: "AT" },
+  { q: "Quel est le nom du fleuve que les Israélites traversent à pied sec pour entrer en terre promise, sous la conduite de Josué ?", o: ["Le Jourdain", "Le Nil", "L'Euphrate", "Le Tigre"], a: 0, cat: "AT" },
+  { q: "Combien de temps Jésus jeûne-t-il dans le désert avant d'être tenté par le diable ?", o: ["40 jours", "7 jours", "3 jours", "12 jours"], a: 0, cat: "NT" },
+  { q: "Quel est le premier miracle de Jésus, accompli lors d'un mariage à Cana ?", o: ["L'eau changée en vin", "La multiplication des pains", "La guérison d'un aveugle", "La marche sur l'eau"], a: 0, cat: "NT" },
+  { q: "Comment appelle-t-on le célèbre discours de Jésus contenant les Béatitudes ?", o: ["Le Sermon sur la montagne", "Le Sermon sur la plaine", "La parabole du semeur", "Le discours des Oliviers"], a: 0, cat: "NT" },
+  { q: "Dans quelle ville Jésus grandit-il, après son enfance en Égypte ?", o: ["Nazareth", "Bethléem", "Capharnaüm", "Jérusalem"], a: 0, cat: "NT" },
+  { q: "Sur quelle montagne, selon la tradition, Jésus est-il transfiguré devant Pierre, Jacques et Jean ?", o: ["Le mont Thabor", "Le mont Sinaï", "Le mont des Oliviers", "Le mont Carmel"], a: 0, cat: "NT" },
+  { q: "Quel apôtre marche sur l'eau vers Jésus avant de commencer à couler par manque de foi ?", o: ["Pierre", "André", "Jean", "Jacques"], a: 0, cat: "NT" },
+  { q: "Combien de lépreux Jésus guérit-il en une seule fois, dont un seul revient le remercier ?", o: ["10", "7", "12", "5"], a: 0, cat: "NT" },
+  { q: "Quel homme riche et petit de taille grimpe sur un sycomore pour voir Jésus passer ?", o: ["Zachée", "Nicodème", "Lazare", "Barthélemy"], a: 0, cat: "NT" },
+  { q: "Quel ami de Jésus, mort depuis quatre jours, est ressuscité à Béthanie ?", o: ["Lazare", "Jaïrus", "Zachée", "Étienne"], a: 0, cat: "NT" },
+  { q: "Quelle femme oint les pieds de Jésus avec un parfum précieux et les essuie avec ses cheveux ?", o: ["Marie de Béthanie", "Marthe", "Salomé", "Jeanne"], a: 0, cat: "NT" },
+  { q: "Quel jour de la semaine Jésus est-il crucifié, selon la tradition chrétienne ?", o: ["Vendredi", "Jeudi", "Dimanche", "Samedi"], a: 0, cat: "NT" },
+  { q: "Sur quelle colline, à l'extérieur de Jérusalem, Jésus est-il crucifié ?", o: ["Le Golgotha", "Le mont des Oliviers", "Le mont Sion", "Le mont Moriah"], a: 0, cat: "NT" },
+  { q: "Quel jour Jésus ressuscite-t-il d'entre les morts, selon les Évangiles ?", o: ["Le troisième jour", "Le septième jour", "Le premier jour du jeûne", "Quarante jours après"], a: 0, cat: "NT" },
+  { q: "Combien de jours Jésus ressuscité apparaît-il à ses disciples avant de monter au ciel ?", o: ["40 jours", "7 jours", "3 jours", "50 jours"], a: 0, cat: "NT" },
+  { q: "Quel événement, cinquante jours après Pâques, voit le Saint-Esprit descendre sur les apôtres à Jérusalem ?", o: ["La Pentecôte", "La Transfiguration", "L'Ascension", "La Nativité"], a: 0, cat: "NT" },
+  { q: "Quel est le nom du premier martyr chrétien, lapidé pour sa foi selon le livre des Actes ?", o: ["Étienne", "Jacques", "Barnabé", "Philippe"], a: 0, cat: "NT" },
+  { q: "Quel centurion romain est, avec sa famille, parmi les premiers non-Juifs à recevoir le baptême chrétien ?", o: ["Corneille", "Pilate", "Félix", "Festus"], a: 0, cat: "NT" },
+  { q: "Quel évangéliste écrit aussi le livre des Actes des Apôtres, en plus de son évangile ?", o: ["Luc", "Marc", "Matthieu", "Jean"], a: 0, cat: "NT" },
+  { q: "Combien d'évangiles compte le Nouveau Testament ?", o: ["4", "3", "5", "2"], a: 0, cat: "NT" },
+  { q: "Quel évangile est considéré comme le plus court et le plus rapide dans son récit ?", o: ["Marc", "Matthieu", "Luc", "Jean"], a: 0, cat: "NT" },
+  { q: "Quel évangile met l'accent sur la divinité de Jésus, en commençant par « Au commencement était la Parole » ?", o: ["Jean", "Marc", "Matthieu", "Luc"], a: 0, cat: "NT" },
+  { q: "Quel évangile s'adresse surtout à un public juif et met en avant l'accomplissement des prophéties ?", o: ["Matthieu", "Marc", "Luc", "Jean"], a: 0, cat: "NT" },
+  { q: "Quel apôtre écrit la majorité des épîtres du Nouveau Testament ?", o: ["Paul", "Pierre", "Jean", "Jacques"], a: 0, cat: "NT" },
+  { q: "Dans quelle ville l'apôtre Paul prêche-t-il devant l'Aréopage, un tribunal philosophique ?", o: ["Athènes", "Corinthe", "Éphèse", "Rome"], a: 0, cat: "NT" },
+  { q: "Quelle épître de Paul est adressée aux chrétiens de la capitale de l'Empire romain ?", o: ["Romains", "Éphésiens", "Colossiens", "Galates"], a: 0, cat: "NT" },
+  { q: "Quel livre du Nouveau Testament contient les visions apocalyptiques de Jean sur l'île de Patmos ?", o: ["L'Apocalypse", "Les Actes", "Les Hébreux", "Jude"], a: 0, cat: "NT" },
+  { q: "Combien de lettres aux Églises ouvrent le livre de l'Apocalypse ?", o: ["7", "12", "3", "10"], a: 0, cat: "NT" },
+  { q: "Quel roi juif ordonne le massacre des enfants de Bethléem après la naissance de Jésus ?", o: ["Hérode le Grand", "Hérode Antipas", "Hérode Agrippa", "Ponce Pilate"], a: 0, cat: "NT" },
+  { q: "Quel gouverneur romain juge Jésus et autorise sa crucifixion, malgré ses doutes sur sa culpabilité ?", o: ["Ponce Pilate", "Hérode Antipas", "Félix", "Festus"], a: 0, cat: "NT" },
+  { q: "Quel disciple refuse de croire à la résurrection de Jésus tant qu'il n'a pas vu ses blessures ?", o: ["Thomas", "Philippe", "André", "Barthélemy"], a: 0, cat: "NT" },
+  { q: "Quel apôtre est décapité sur ordre du roi Hérode Agrippa Ier, selon le livre des Actes ?", o: ["Jacques, fils de Zébédée", "Jean", "André", "Philippe"], a: 0, cat: "NT" },
+  { q: "De quelle ville partent Paul et Barnabas pour leur premier voyage missionnaire ?", o: ["Antioche", "Jérusalem", "Éphèse", "Rome"], a: 0, cat: "NT" },
+  { q: "Quel métier exerçait l'apôtre Paul pour subvenir à ses besoins durant ses voyages missionnaires ?", o: ["Fabricant de tentes", "Pêcheur", "Charpentier", "Collecteur d'impôts"], a: 0, cat: "NT" },
+  { q: "Quel métier Pierre et André exerçaient-ils avant de suivre Jésus ?", o: ["Pêcheurs", "Bergers", "Charpentiers", "Agriculteurs"], a: 0, cat: "NT" },
+  { q: "Quel métier Matthieu exerçait-il avant de devenir disciple de Jésus ?", o: ["Collecteur d'impôts", "Pêcheur", "Médecin", "Scribe"], a: 0, cat: "NT" },
+  { q: "Quel évangéliste est aussi décrit comme médecin dans les épîtres de Paul ?", o: ["Luc", "Marc", "Matthieu", "Jean"], a: 0, cat: "NT" },
+  { q: "Quelle parabole de Jésus raconte l'histoire d'un fils qui dilapide son héritage puis revient chez son père ?", o: ["Le fils prodigue", "Le bon Samaritain", "La brebis perdue", "Le semeur"], a: 0, cat: "NT" },
+  { q: "Quelle parabole met en scène un voyageur secouru par un étranger, après avoir été ignoré par un prêtre et un lévite ?", o: ["Le bon Samaritain", "Le fils prodigue", "Les talents", "Le grain de moutarde"], a: 0, cat: "NT" },
+  { q: "Combien de paniers de morceaux restent après que Jésus a nourri cinq mille personnes ?", o: ["12 paniers", "7 paniers", "5 paniers", "2 paniers"], a: 0, cat: "NT" },
+  { q: "En plus d'un bruit de vent violent, quel signe visible se pose sur chaque apôtre lors de la Pentecôte ?", o: ["Des langues de feu", "Une colombe", "Un tremblement de terre", "Un nuage lumineux"], a: 0, cat: "NT" },
+  { q: "Quel fils d'Abraham est presque sacrifié sur le mont Moriah avant qu'un ange n'arrête son père ?", o: ["Isaac", "Ismaël", "Jacob", "Ésaü"], a: 0, cat: "PH" },
+  { q: "Quelle est la femme d'Abraham qui rit en apprenant qu'elle aura un fils dans sa vieillesse ?", o: ["Sarah", "Hagar", "Rebecca", "Milca"], a: 0, cat: "PH" },
+  { q: "Quelle est la servante égyptienne de Sarah qui devient la mère d'Ismaël ?", o: ["Hagar", "Zilpa", "Bilha", "Ruth"], a: 0, cat: "PH" },
+  { q: "Quelle femme est choisie comme épouse d'Isaac après avoir offert de l'eau à un serviteur et à ses chameaux ?", o: ["Rebecca", "Rachel", "Léa", "Sarah"], a: 0, cat: "PH" },
+  { q: "Quel frère jumeau de Jacob vend son droit d'aînesse pour un plat de lentilles ?", o: ["Ésaü", "Ruben", "Juda", "Benjamin"], a: 0, cat: "PH" },
+  { q: "Quelle est l'épouse préférée de Jacob, pour laquelle il travaille sept ans chez Laban ?", o: ["Rachel", "Léa", "Bilha", "Zilpa"], a: 0, cat: "PH" },
+  { q: "Quelle est la première épouse de Jacob, donnée à lui par ruse à la place de Rachel ?", o: ["Léa", "Rachel", "Dina", "Tamar"], a: 0, cat: "PH" },
+  { q: "Quel est le nom du plus jeune fils de Jacob, frère de Joseph, né de Rachel ?", o: ["Benjamin", "Ruben", "Lévi", "Dan"], a: 0, cat: "PH" },
+  { q: "Quel est le nom du fils aîné de Jacob et de Léa ?", o: ["Ruben", "Siméon", "Lévi", "Juda"], a: 0, cat: "PH" },
+  { q: "De quel fils de Jacob la tribu et le royaume de Juda tirent-ils leur nom ?", o: ["Juda", "Ruben", "Benjamin", "Lévi"], a: 0, cat: "PH" },
+  { q: "Quel neveu d'Abraham s'échappe de la ville de Sodome avant sa destruction ?", o: ["Lot", "Ismaël", "Nachor", "Haran"], a: 0, cat: "PH" },
+  { q: "Quel est le premier juge mentionné dans le livre des Juges, neveu de Caleb ?", o: ["Othniel", "Éhud", "Shamgar", "Jephté"], a: 0, cat: "PH" },
+  { q: "Quel juge gaucher d'Israël tue le roi moabite Églon avec une épée cachée ?", o: ["Éhud", "Othniel", "Jephté", "Tola"], a: 0, cat: "PH" },
+  { q: "Quel juge d'Israël fait un vœu imprudent qui lui coûte le sacrifice de sa fille ?", o: ["Jephté", "Éhud", "Gédéon", "Samson"], a: 0, cat: "PH" },
+  { q: "Quelle femme stérile prie ardemment au tabernacle de Silo pour obtenir un fils, qui deviendra le prophète Samuel ?", o: ["Anne", "Déborah", "Miriam", "Ruth"], a: 0, cat: "PH" },
+  { q: "Quel grand prêtre de Silo élève le jeune Samuel au tabernacle ?", o: ["Éli", "Aaron", "Éléazar", "Phinées"], a: 0, cat: "PH" },
+  { q: "Quel roi d'Israël est décrit comme « un homme selon le cœur de Dieu » ?", o: ["David", "Saül", "Salomon", "Josaphat"], a: 0, cat: "PH" },
+  { q: "Quel fils de Salomon perd dix tribus d'Israël à cause de sa dureté envers le peuple ?", o: ["Roboam", "Jéroboam", "Abija", "Asa"], a: 0, cat: "PH" },
+  { q: "Quel est le premier roi du royaume du Nord, Israël, après la division du royaume ?", o: ["Jéroboam", "Roboam", "Achab", "Omri"], a: 0, cat: "PH" },
+  { q: "Quel roi d'Israël épouse Jézabel et introduit le culte de Baal dans le royaume ?", o: ["Achab", "Jéroboam", "Omri", "Achazia"], a: 0, cat: "PH" },
+  { q: "Quelle reine, épouse d'Achab, fait tuer les prophètes de l'Éternel et persécute Élie ?", o: ["Jézabel", "Athalie", "Esther", "Vasthi"], a: 0, cat: "PH" },
+  { q: "Quel roi de Juda, réputé pour sa piété, remporte une victoire miraculeuse sans combattre en louant Dieu ?", o: ["Josaphat", "Ézéchias", "Josias", "Asa"], a: 0, cat: "PH" },
+  { q: "Quel roi de Juda voit sa vie prolongée de quinze ans après une prière fervente au prophète Ésaïe ?", o: ["Ézéchias", "Josias", "Manassé", "Ozias"], a: 0, cat: "PH" },
+  { q: "Quel jeune roi de Juda relance la réforme religieuse après la découverte du livre de la Loi dans le Temple ?", o: ["Josias", "Ézéchias", "Joas", "Amon"], a: 0, cat: "PH" },
+  { q: "Quel roi de Juda, réputé très impie, se repent après avoir été emmené captif à Babylone ?", o: ["Manassé", "Achaz", "Amon", "Joachim"], a: 0, cat: "PH" },
+  { q: "Quel roi de Babylone détruit Jérusalem et emmène le peuple juif en exil ?", o: ["Nabuchodonosor", "Balthazar", "Cyrus", "Darius"], a: 0, cat: "PH" },
+  { q: "Quel grand prophète annonce la naissance d'un enfant appelé « Emmanuel » et décrit un serviteur souffrant ?", o: ["Ésaïe", "Jérémie", "Ézéchiel", "Daniel"], a: 0, cat: "PH" },
+  { q: "Quel prophète est jeté dans une citerne boueuse pour avoir annoncé la chute de Jérusalem ?", o: ["Jérémie", "Ésaïe", "Amos", "Michée"], a: 0, cat: "PH" },
+  { q: "Quel prophète, exilé à Babylone, voit une vision de roues dans les airs et de créatures célestes ?", o: ["Ézéchiel", "Daniel", "Jérémie", "Abdias"], a: 0, cat: "PH" },
+  { q: "Quel prophète interprète le rêve d'une statue aux pieds d'argile pour le roi Nabuchodonosor ?", o: ["Daniel", "Ézéchiel", "Ésaïe", "Jérémie"], a: 0, cat: "PH" },
+  { q: "Quels trois compagnons de Daniel sont jetés dans une fournaise ardente pour avoir refusé d'adorer une statue d'or ?", o: ["Chadrak, Méshak et Abed-Nego", "Pierre, Jacques et Jean", "Aaron, Éléazar et Ithamar", "Gad, Nathan et Asaph"], a: 0, cat: "PH" },
+  { q: "Quel prophète épouse Gomer, une femme infidèle, en symbole de la relation entre Dieu et Israël ?", o: ["Osée", "Joël", "Amos", "Michée"], a: 0, cat: "PH" },
+  { q: "Quel prophète, simple berger de Tekoa, dénonce les injustices sociales et l'hypocrisie religieuse d'Israël ?", o: ["Amos", "Osée", "Joël", "Abdias"], a: 0, cat: "PH" },
+  { q: "Quel général syrien est guéri de la lèpre après s'être baigné sept fois dans le Jourdain, sur les conseils d'Élisée ?", o: ["Naaman", "Ben-Hadad", "Hazaël", "Rezin"], a: 0, cat: "PH" },
+  { q: "Quel prophète païen voit son ânesse parler pour l'empêcher de maudire Israël ?", o: ["Balaam", "Balak", "Éliphaz", "Bildad"], a: 0, cat: "PH" },
+  { q: "Quel lévite mène une rébellion contre Moïse et Aaron, avant que la terre ne s'ouvre pour l'engloutir ?", o: ["Coré", "Dathan", "Abiram", "Nadab"], a: 0, cat: "PH" },
+  { q: "Quelle sœur de Moïse est frappée de lèpre pour s'être opposée à son mariage avec une Éthiopienne ?", o: ["Miriam", "Séphora", "Rebecca", "Élisabeth"], a: 0, cat: "PH" },
+  { q: "Quels fils d'Aaron meurent après avoir offert un feu étranger devant l'Éternel ?", o: ["Nadab et Abihu", "Éléazar et Ithamar", "Pinehas et Nadab", "Coré et Dathan"], a: 0, cat: "PH" },
+  { q: "Quel petit-fils d'Aaron est loué pour son zèle après avoir arrêté une plaie en Israël ?", o: ["Pinehas", "Éléazar", "Ithamar", "Nadab"], a: 0, cat: "PH" },
+  { q: "Quelle femme tue le général cananéen Sisera en lui enfonçant un piquet de tente dans la tempe ?", o: ["Yaël", "Déborah", "Rahab", "Miriam"], a: 0, cat: "PH" },
+  { q: "Quel général israélite conduit l'armée contre Sisera, sur les conseils de la prophétesse Déborah ?", o: ["Barak", "Gédéon", "Éhud", "Jephté"], a: 0, cat: "PH" },
+  { q: "Quelle femme philistine trahit Samson en découvrant le secret de sa force ?", o: ["Dalila", "Rahab", "Yaël", "Ruth"], a: 0, cat: "PH" },
+  { q: "Quel propriétaire de champ épouse Ruth la Moabite et devient son rédempteur ?", o: ["Booz", "Élimélek", "Mahlon", "Kilion"], a: 0, cat: "PH" },
+  { q: "Quel est le nom du père du roi David ?", o: ["Jessé", "Obed", "Booz", "Salmon"], a: 0, cat: "PH" },
+  { q: "Quelle femme intelligente empêche David de se venger de son mari Nabal, puis devient son épouse après la mort de celui-ci ?", o: ["Abigaïl", "Bethsabée", "Mical", "Ahinoam"], a: 0, cat: "PH" },
+  { q: "Quelle femme, épouse d'Urie puis de David, devient la mère du roi Salomon ?", o: ["Bethsabée", "Abigaïl", "Mical", "Ahinoam"], a: 0, cat: "PH" },
+  { q: "Quel mari de Bethsabée est envoyé délibérément en première ligne pour y mourir, sur ordre du roi David ?", o: ["Urie le Hittite", "Joab", "Absalom", "Amasa"], a: 0, cat: "PH" },
+  { q: "Quel prophète confronte le roi David après son péché avec Bethsabée, au moyen d'une parabole ?", o: ["Nathan", "Gad", "Samuel", "Ésaïe"], a: 0, cat: "PH" },
+  { q: "Quel fils infirme de Jonathan reçoit la bonté du roi David en mémoire de son amitié avec son père ?", o: ["Mephiboshet", "Absalom", "Adonija", "Ischbaal"], a: 0, cat: "PH" },
+  { q: "Quelle reine étrangère rend visite à Salomon pour éprouver sa sagesse avec des énigmes ?", o: ["La reine de Saba", "Athalie", "Vasthi", "Jézabel"], a: 0, cat: "PH" },
+  { q: "Quel prophète est nourri par des corbeaux près du torrent de Kerith durant une sécheresse ?", o: ["Élie", "Élisée", "Samuel", "Ésaïe"], a: 0, cat: "PH" },
+  { q: "Quelle veuve voit sa farine et son huile ne jamais s'épuiser, grâce au prophète Élie ?", o: ["La veuve de Sarepta", "La veuve de Naïn", "Anne", "Ruth"], a: 0, cat: "PH" },
+  { q: "Quel serviteur du prophète Élisée est frappé de lèpre pour avoir menti afin d'obtenir de l'argent de Naaman ?", o: ["Guéhazi", "Ovadia", "Josaphat", "Élisée lui-même"], a: 0, cat: "PH" },
+  { q: "Quelle reine usurpatrice de Juda fait tuer sa propre famille royale pour s'emparer du trône ?", o: ["Athalie", "Jézabel", "Vasthi", "Esther"], a: 0, cat: "PH" },
+  { q: "Quel jeune roi de Juda est caché pendant six ans dans le Temple avant d'être couronné à sept ans ?", o: ["Joas", "Josias", "Ézéchias", "Amatsia"], a: 0, cat: "PH" },
+  { q: "Quel pharisien vient trouver Jésus de nuit pour l'interroger sur la nouvelle naissance ?", o: ["Nicodème", "Gamaliel", "Caïphe", "Anne"], a: 0, cat: "PH" },
+  { q: "Quelle sœur de Marie et de Lazare se plaint d'être seule à servir pendant que sa sœur écoute Jésus ?", o: ["Marthe", "Marie-Madeleine", "Salomé", "Jeanne"], a: 0, cat: "PH" },
+  { q: "Quelle femme, délivrée de sept démons par Jésus, est la première à voir le Christ ressuscité ?", o: ["Marie-Madeleine", "Marthe", "Marie de Béthanie", "Jeanne"], a: 0, cat: "PH" },
+  { q: "Quel homme est réquisitionné pour porter la croix de Jésus jusqu'au Golgotha ?", o: ["Simon de Cyrène", "Joseph d'Arimathée", "Nicodème", "Barabbas"], a: 0, cat: "PH" },
+  { q: "Quel prisonnier est libéré par Pilate à la place de Jésus, à la demande de la foule ?", o: ["Barabbas", "Simon de Cyrène", "Malchus", "Caïphe"], a: 0, cat: "PH" },
+  { q: "Quel grand prêtre juif préside le procès religieux de Jésus avant sa remise à Pilate ?", o: ["Caïphe", "Anne", "Gamaliel", "Nicodème"], a: 0, cat: "PH" },
+  { q: "Quel roi fait décapiter Jean-Baptiste, à la demande de la fille d'Hérodiade ?", o: ["Hérode Antipas", "Hérode le Grand", "Hérode Agrippa", "Ponce Pilate"], a: 0, cat: "PH" },
+  { q: "Quelle jeune fille danse devant Hérode et demande la tête de Jean-Baptiste sur un plateau, à l'instigation de sa mère ?", o: ["Salomé", "Hérodiade", "Bérénice", "Drusille"], a: 0, cat: "PH" },
+  { q: "Quelle est la mère de Jean-Baptiste, cousine de Marie, mère de Jésus ?", o: ["Élisabeth", "Anne", "Marthe", "Salomé"], a: 0, cat: "PH" },
+  { q: "Quel prêtre, père de Jean-Baptiste, devient muet après avoir douté de l'annonce de l'ange Gabriel ?", o: ["Zacharie", "Éli", "Caïphe", "Anne"], a: 0, cat: "PH" },
+  { q: "Quel vieillard, au Temple, prend l'enfant Jésus dans ses bras et loue Dieu de pouvoir enfin mourir en paix ?", o: ["Siméon", "Nicodème", "Joseph d'Arimathée", "Gamaliel"], a: 0, cat: "PH" },
+  { q: "Quelle prophétesse âgée, présente au Temple, reconnaît elle aussi Jésus comme le Messie ?", o: ["Anne", "Élisabeth", "Marthe", "Salomé"], a: 0, cat: "PH" },
+  { q: "Qui suit une étoile depuis l'Orient pour venir adorer l'enfant Jésus et lui offrir de l'or, de l'encens et de la myrrhe ?", o: ["Les mages", "Les bergers", "Les prêtres du Temple", "Les scribes"], a: 0, cat: "PH" },
+  { q: "Quel frère de Simon Pierre est l'un des premiers disciples appelés par Jésus ?", o: ["André", "Jacques", "Jean", "Philippe"], a: 0, cat: "PH" },
+  { q: "Quels deux frères pêcheurs, fils de Zébédée, sont surnommés « fils du tonnerre » par Jésus ?", o: ["Jacques et Jean", "Pierre et André", "Philippe et Barthélemy", "Thomas et Matthieu"], a: 0, cat: "PH" },
+  { q: "Quel disciple invite Nathanaël à venir voir Jésus, en lui disant « Viens et vois » ?", o: ["Philippe", "André", "Thomas", "Jacques"], a: 0, cat: "PH" },
+  { q: "Quel disciple Jésus décrit-il comme « un véritable Israélite, en qui il n'y a point de fraude » ?", o: ["Nathanaël", "Thomas", "Matthieu", "Philippe"], a: 0, cat: "PH" },
+  { q: "Quel apôtre de Jésus est surnommé « le Zélote », en référence à son engagement politique antérieur ?", o: ["Simon le Zélote", "Jude Thaddée", "Matthias", "Barthélemy"], a: 0, cat: "PH" },
+  { q: "Quel apôtre, aussi appelé Thaddée, écrit une courte épître mettant en garde contre les faux docteurs ?", o: ["Jude", "Jacques", "Matthias", "Barthélemy"], a: 0, cat: "PH" },
+  { q: "Quel évangéliste baptise un haut fonctionnaire éthiopien qui lisait le livre d'Ésaïe sur la route de Gaza ?", o: ["Philippe l'évangéliste", "Étienne", "Barnabas", "Silas"], a: 0, cat: "PH" },
+  { q: "Quel disciple de Damas est envoyé par Dieu pour rendre la vue à Saul de Tarse après sa conversion ?", o: ["Ananias", "Étienne", "Barnabas", "Silas"], a: 0, cat: "PH" },
+  { q: "Quel compagnon de Paul chante des hymnes avec lui en prison à Philippes, avant qu'un tremblement de terre ne libère leurs chaînes ?", o: ["Silas", "Timothée", "Tite", "Marc"], a: 0, cat: "PH" },
+  { q: "Quel collaborateur de Paul est laissé en Crète pour y organiser les Églises, et reçoit une épître à son nom ?", o: ["Tite", "Timothée", "Silas", "Épaphras"], a: 0, cat: "PH" },
+  { q: "Quel couple, fabricants de tentes comme Paul, l'accompagne dans son ministère à Corinthe et à Éphèse ?", o: ["Priscille et Aquilas", "Marthe et Marie", "Lydie et Tabitha", "Élisabeth et Zacharie"], a: 0, cat: "PH" },
+  { q: "Quel prédicateur éloquent d'Alexandrie est instruit plus précisément dans la foi par Priscille et Aquilas ?", o: ["Apollos", "Épaphras", "Tychique", "Trophime"], a: 0, cat: "PH" },
+  { q: "Quel jeune assistant abandonne Paul et Barnabas en cours de voyage missionnaire, provoquant plus tard leur séparation ?", o: ["Jean-Marc", "Tite", "Silas", "Timothée"], a: 0, cat: "PH" },
+  { q: "Quelle marchande de pourpre est la première convertie de Paul en Europe, à Philippes ?", o: ["Lydie", "Priscille", "Tabitha", "Chloé"], a: 0, cat: "PH" },
+  { q: "Quel collaborateur de Paul fonde l'Église de Colosses et prie ardemment pour elle ?", o: ["Épaphras", "Apollos", "Tychique", "Onésime"], a: 0, cat: "PH" },
+  { q: "Quel esclave fugitif, converti par Paul, est renvoyé à son maître Philémon avec une lettre d'intercession ?", o: ["Onésime", "Épaphras", "Tychique", "Trophime"], a: 0, cat: "PH" },
+  { q: "Quel est le nom de la reine d'Israël dont l'orgueil pousse le roi Assuérus à la répudier avant qu'Esther ne devienne reine ?", o: ["Vasthi", "Athalie", "Jézabel", "Michal"], a: 0, cat: "PH" },
+  { q: "Quel cousin d'Esther l'élève et refuse de se prosterner devant Haman ?", o: ["Mardochée", "Haman", "Assuérus", "Memucan"], a: 0, cat: "PH" },
+  { q: "Quel roi d'Assyrie envoie Rabshaké insulter Dieu devant les murs de Jérusalem, avant d'être vaincu par un ange ?", o: ["Sanchérib", "Salmanazar", "Tiglath-Piléser", "Assarhaddon"], a: 0, cat: "PH" },
+  { q: "Quel prêtre courageux cache et protège le jeune roi Joas pendant six ans contre la reine Athalie ?", o: ["Yehoyada", "Zacharie", "Éli", "Hilkija"], a: 0, cat: "PH" },
+  { q: "Quel grand prêtre retrouve le livre de la Loi perdu dans le Temple, sous le règne de Josias ?", o: ["Hilkija", "Yehoyada", "Éléazar", "Phinées"], a: 0, cat: "PH" },
+  { q: "Quel scribe et prêtre lit publiquement la Loi de Moïse au peuple, après le retour d'exil à Jérusalem ?", o: ["Esdras", "Néhémie", "Zorobabel", "Josué le grand prêtre"], a: 0, cat: "PH" },
+  { q: "Quel descendant de David dirige le premier groupe d'exilés revenus de Babylone pour reconstruire le Temple ?", o: ["Zorobabel", "Esdras", "Néhémie", "Josias"], a: 0, cat: "PH" },
+  { q: "Quel échanson du roi perse obtient l'autorisation de retourner reconstruire les murailles de Jérusalem ?", o: ["Néhémie", "Esdras", "Zorobabel", "Mardochée"], a: 0, cat: "PH" },
+  { q: "Quel général en chef de l'armée de David tue Absalom malgré l'ordre du roi de l'épargner ?", o: ["Joab", "Abner", "Amasa", "Benaja"], a: 0, cat: "PH" },
+  { q: "Quel puissant guerrier de David commande sa garde personnelle et tue un lion dans une citerne un jour de neige ?", o: ["Benaja", "Joab", "Abischaï", "Éléazar"], a: 0, cat: "PH" },
+  { q: "Quel devin moabite est engagé par le roi Balak pour maudire le peuple d'Israël en marche vers Canaan ?", o: ["Balaam", "Job", "Éliphaz", "Agur"], a: 0, cat: "PH" },
+  { q: "Quel homme au grand patrimoine perd tous ses biens et ses enfants, mais reste intègre malgré les épreuves envoyées par Satan ?", o: ["Job", "Naboth", "Onésime", "Lazare"], a: 0, cat: "PH" },
+  { q: "Quel roi d'Israël fait assassiner Naboth pour s'emparer de sa vigne ?", o: ["Achab", "Jéroboam", "Omri", "Achazia"], a: 0, cat: "PH" },
+  { q: "Quel espion, envoyé avec Josué explorer Canaan, reçoit en récompense la ville d'Hébron pour sa fidélité ?", o: ["Caleb", "Guershom", "Éléazar", "Nadab"], a: 0, cat: "PH" },
+  { q: "Quel beau-père de Moïse, prêtre de Madian, lui conseille de déléguer la justice à d'autres chefs ?", o: ["Jéthro", "Réuel", "Hobab", "Balaam"], a: 0, cat: "PH" },
+  { q: "Quel apôtre remplace Judas Iscariote après sa mort, choisi par tirage au sort parmi les disciples ?", o: ["Matthias", "Barnabas", "Silas", "Apollos"], a: 0, cat: "PH" },
+];
+
+/* ============ STOCKAGE PERSISTANT (remplace localStorage) ============ */
+async function storageGet(key, fallback) {
+  try {
+    if (!window.storage || typeof window.storage.get !== 'function') return fallback;
+    const res = await window.storage.get(key, false);
+    return res && res.value !== undefined ? JSON.parse(res.value) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+async function storageSet(key, value) {
+  try {
+    if (!window.storage || typeof window.storage.set !== 'function') return;
+    await window.storage.set(key, JSON.stringify(value), false);
+  } catch (e) {
+    /* stockage indisponible : on continue sans bloquer le jeu */
+  }
+}
+
+/* ============ ÉTAT GLOBAL ============ */
+const state = {
+  playerName: '',
+  category: 'MIX',
+  mode: 'classic',
+  questions: [],
+  current: 0,
+  score: 0,
+  lives: 3,
+  combo: 0,
+  maxCombo: 0,
+  powerups: { fifty: 1, skip: 1 },
+  timer: null,
+  timeLeft: 20,
+  theme: 'dark',
+  sound: true,
+  screen: 'tabs',   // 'tabs' | 'playing' | 'result'
+  tab: 'jouer',     // 'jouer' | 'categorie' | 'classement'
+};
+
+const app = document.getElementById('app');
+const themeBtn = document.getElementById('theme-btn');
+
+/* ============ THÈME ============ */
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', state.theme);
+  themeBtn.textContent = state.theme === 'dark' ? '☀️' : '🌙';
+}
+themeBtn.addEventListener('click', async () => {
+  state.theme = state.theme === 'dark' ? 'light' : 'dark';
+  await storageSet('bible-quiz:theme', state.theme);
+  applyTheme();
+});
+
+/* ============ SONS (Web Audio API) ============ */
+let audioCtx;
+function playSound(type) {
+  if (!state.sound) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+
+    const sounds = {
+      correct: { freq: [523, 659, 784], type: 'sine', dur: 0.15 },
+      wrong: { freq: [200, 150], type: 'sawtooth', dur: 0.2 },
+      click: { freq: [800], type: 'sine', dur: 0.05 },
+      win: { freq: [523, 659, 784, 1047], type: 'sine', dur: 0.2 },
+      tick: { freq: [1000], type: 'sine', dur: 0.03 },
+    };
+    const s = sounds[type];
+    o.type = s.type;
+    g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + s.dur * s.freq.length);
+    s.freq.forEach((f, i) => o.frequency.setValueAtTime(f, audioCtx.currentTime + i * s.dur));
+    o.start();
+    o.stop(audioCtx.currentTime + s.dur * s.freq.length);
+  } catch (e) { /* audio indisponible, on ignore silencieusement */ }
+}
+
+/* ============ UTILITAIRES ============ */
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function questionsForCategory(cat) {
+  if (cat === 'MIX') return QUESTIONS_DB;
+  return QUESTIONS_DB.filter(q => q.cat === cat);
+}
+
+function categoryLabel(cat) {
+  if (cat === 'AT') return 'Ancien Testament';
+  if (cat === 'NT') return 'Nouveau Testament';
+  if (cat === 'PH') return 'Personnages & Héros';
+  return 'Mixte';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+/* ============ ONGLETS (barre persistante hors partie) ============ */
+function renderTabBar() {
+  const tabs = [
+    { id: 'jouer', icon: '🎮', label: 'Jouer' },
+    { id: 'categorie', icon: '📚', label: 'Catégorie' },
+    { id: 'classement', icon: '🏆', label: 'Classement' },
+  ];
+  return `
+    <div class="tabs">
+      ${tabs.map(t => `
+        <button class="tab-btn ${state.tab === t.id ? 'active' : ''}" data-tab="${t.id}">
+          <span class="tab-icon">${t.icon}</span>
+          <span>${t.label}</span>
+        </button>
+      `).join('')}
+    </div>
+  `;
+}
+
+function bindTabBar() {
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.tab = btn.dataset.tab;
+      renderApp();
+    });
+  });
+}
+
+/* ============ ROUTEUR PRINCIPAL ============ */
+function renderApp() {
+  if (state.screen === 'playing') { renderQuestion(); return; }
+  if (state.screen === 'result') { return; } // showResult() gère déjà son propre rendu
+  if (state.tab === 'jouer') return renderHomeTab();
+  if (state.tab === 'categorie') return renderCategoryTab();
+  if (state.tab === 'classement') return renderLeaderboardTab();
+}
+
+/* ============ ONGLET : JOUER ============ */
+function renderHomeTab() {
+  app.innerHTML = `
+    <div class="container">
+      <h1>📖 Bible Quiz Deluxe</h1>
+      <p class="subtitle">Teste tes connaissances avec style ✨</p>
+      ${renderTabBar()}
+
+      <input type="text" id="name" placeholder="Ton prénom..." value="${escapeHtml(state.playerName)}">
+      <div id="name-error"></div>
+
+      <div style="display:flex; align-items:center; justify-content:space-between; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; padding: 12px 16px; margin: 10px 0 20px;">
+        <span style="color: var(--text-dim); font-size:0.9rem;">📚 Catégorie sélectionnée</span>
+        <span class="badge badge-${state.category==='MIX'?'mix':state.category.toLowerCase()}">${categoryLabel(state.category)}</span>
+      </div>
+
+      <h3 style="margin: 15px 0 10px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">🎮 Mode de jeu</h3>
+      <div class="mode-grid">
+        <div class="cat-btn ${state.mode==='classic'?'active':''}" data-mode="classic"><span class="icon">🎯</span>Classique<br><small style="opacity:0.7">jusqu'à 10 questions</small></div>
+        <div class="cat-btn ${state.mode==='survival'?'active':''}" data-mode="survival"><span class="icon">❤️</span>Survie<br><small style="opacity:0.7">3 vies max</small></div>
+      </div>
+
+      <button class="btn btn-success btn-full" id="start-btn" style="width:100%; margin-top: 10px;">🚀 Commencer</button>
+    </div>
+  `;
+
+  bindTabBar();
+
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.cat) state.category = btn.dataset.cat;
+      if (btn.dataset.mode) state.mode = btn.dataset.mode;
+      renderHomeTab();
+    });
+  });
+
+  document.getElementById('start-btn').addEventListener('click', startGame);
+}
+
+async function startGame() {
+  const nameInput = document.getElementById('name');
+  const errorBox = document.getElementById('name-error');
+  const name = nameInput.value.trim();
+  if (!name) {
+    errorBox.innerHTML = `<p class="error-msg">Entre ton prénom pour commencer.</p>`;
+    return;
+  }
+
+  state.playerName = name;
+  await storageSet('bible-quiz:playerName', state.playerName);
+  playSound('click');
+
+  const pool = shuffle(questionsForCategory(state.category));
+  if (pool.length === 0) {
+    errorBox.innerHTML = `<p class="error-msg">Aucune question dans cette catégorie.</p>`;
+    return;
+  }
+
+  state.questions = state.mode === 'classic' ? pool.slice(0, Math.min(10, pool.length)) : pool;
+  state.current = 0;
+  state.score = 0;
+  state.lives = 3;
+  state.combo = 0;
+  state.maxCombo = 0;
+  state.powerups = { fifty: 1, skip: 1 };
+  state.screen = 'playing';
+  renderQuestion();
+}
+
+/* ============ ONGLET : CATÉGORIE ============ */
+function renderCategoryTab() {
+  const counts = {
+    AT: questionsForCategory('AT').length,
+    NT: questionsForCategory('NT').length,
+    PH: questionsForCategory('PH').length,
+    MIX: QUESTIONS_DB.length,
+  };
+
+  app.innerHTML = `
+    <div class="container">
+      <h1>📖 Bible Quiz Deluxe</h1>
+      ${renderTabBar()}
+      <p class="subtitle">Choisis la catégorie de questions pour ta prochaine partie</p>
+
+      <div class="category-grid" style="grid-template-columns: 1fr; gap: 14px;">
+        <div class="cat-btn ${state.category==='AT'?'active':''}" data-cat="AT" style="text-align:left; display:flex; align-items:center; gap:16px; padding: 20px;">
+          <span class="icon" style="margin:0; font-size:2.4rem;">📜</span>
+          <span>
+            <div style="font-size:1.05rem;">Ancien Testament</div>
+            <small style="opacity:0.7; font-weight:400;">${counts.AT} questions — de la Genèse aux prophètes</small>
+          </span>
+        </div>
+        <div class="cat-btn ${state.category==='NT'?'active':''}" data-cat="NT" style="text-align:left; display:flex; align-items:center; gap:16px; padding: 20px;">
+          <span class="icon" style="margin:0; font-size:2.4rem;">✝️</span>
+          <span>
+            <div style="font-size:1.05rem;">Nouveau Testament</div>
+            <small style="opacity:0.7; font-weight:400;">${counts.NT} questions — de Jésus aux apôtres</small>
+          </span>
+        </div>
+        <div class="cat-btn ${state.category==='PH'?'active':''}" data-cat="PH" style="text-align:left; display:flex; align-items:center; gap:16px; padding: 20px;">
+          <span class="icon" style="margin:0; font-size:2.4rem;">🦸</span>
+          <span>
+            <div style="font-size:1.05rem;">Personnages & Héros</div>
+            <small style="opacity:0.7; font-weight:400;">${counts.PH} questions — les grandes figures de la Bible</small>
+          </span>
+        </div>
+        <div class="cat-btn ${state.category==='MIX'?'active':''}" data-cat="MIX" style="text-align:left; display:flex; align-items:center; gap:16px; padding: 20px;">
+          <span class="icon" style="margin:0; font-size:2.4rem;">🎲</span>
+          <span>
+            <div style="font-size:1.05rem;">Mixte</div>
+            <small style="opacity:0.7; font-weight:400;">${counts.MIX} questions — un peu de tout</small>
+          </span>
+        </div>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="go-play-btn" style="width:100%; margin-top: 24px;">🚀 Aller jouer avec cette catégorie</button>
+    </div>
+  `;
+
+  bindTabBar();
+
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.category = btn.dataset.cat;
+      renderCategoryTab();
+    });
+  });
+
+  document.getElementById('go-play-btn').addEventListener('click', () => {
+    state.tab = 'jouer';
+    renderApp();
+  });
+}
+
+/* ============ ÉCRAN DE JEU (pas d'onglets pendant une partie) ============ */
+function renderQuestion() {
+  clearInterval(state.timer);
+  if (state.current >= state.questions.length || (state.mode === 'survival' && state.lives <= 0)) {
+    return showResult();
+  }
+
+  const q = state.questions[state.current];
+  const progress = (state.current / state.questions.length) * 100;
+  state.timeLeft = 20;
+
+  const hearts = [0,1,2].map(i => `<span class="heart ${i >= state.lives ? 'lost' : ''}">❤️</span>`).join('');
+
+  const catLabels = { AT: 'Ancien Test.', NT: 'Nouveau Test.', PH: 'Personnages' };
+
+  app.innerHTML = `
+    <div class="container">
+      <div class="game-header">
+        <div>
+          <div class="lives">${state.mode === 'survival' ? hearts : ''}</div>
+          <small style="color:var(--text-dim)">Q${state.current+1}/${state.questions.length}</small>
+        </div>
+        <div style="text-align:center">
+          <div class="timer-wrap">
+            <svg class="timer-svg" viewBox="0 0 100 100">
+              <circle class="timer-bg" cx="50" cy="50" r="45"/>
+              <circle class="timer-fg" id="timer-fg" cx="50" cy="50" r="45" stroke-dasharray="283" stroke-dashoffset="0"/>
+            </svg>
+            <div class="timer-text" id="timer-text">20</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:1.5rem;font-weight:800;color:var(--accent)">${state.score}</div>
+          ${state.combo >= 2 ? `<div class="combo">🔥 x${state.combo}</div>` : ''}
+        </div>
+      </div>
+
+      <div class="progress"><div class="progress-fill" style="width:${progress}%"></div></div>
+      <div style="text-align:center; margin-bottom:15px;">
+        <span class="badge badge-${q.cat.toLowerCase()}">${catLabels[q.cat] || q.cat}</span>
+      </div>
+      <div class="question">${escapeHtml(q.q)}</div>
+
+      <div class="options" id="options">
+        ${q.o.map((opt, i) => `<button class="option" data-i="${i}"><span class="letter">${String.fromCharCode(65+i)}</span><span>${escapeHtml(opt)}</span></button>`).join('')}
+      </div>
+
+      <div class="powerups">
+        <button class="powerup" id="pw-fifty" ${state.powerups.fifty<=0?'disabled':''}>🎯 50/50 <span class="count">${state.powerups.fifty}</span></button>
+        <button class="powerup" id="pw-skip" ${state.powerups.skip<=0?'disabled':''}>⏭️ Passer <span class="count">${state.powerups.skip}</span></button>
+      </div>
+    </div>
+  `;
+
+  document.querySelectorAll('.option').forEach(btn => {
+    btn.addEventListener('click', () => handleAnswer(parseInt(btn.dataset.i, 10)));
+  });
+  document.getElementById('pw-fifty').addEventListener('click', useFifty);
+  document.getElementById('pw-skip').addEventListener('click', useSkip);
+
+  startTimer();
+}
+
+function startTimer() {
+  const fg = document.getElementById('timer-fg');
+  const txt = document.getElementById('timer-text');
+  if (!fg || !txt) return;
+  const circumference = 283;
+
+  state.timer = setInterval(() => {
+    state.timeLeft--;
+    txt.textContent = state.timeLeft;
+    const offset = circumference * (1 - state.timeLeft / 20);
+    fg.style.strokeDashoffset = offset;
+
+    if (state.timeLeft <= 5) { fg.classList.add('danger'); fg.classList.remove('warning'); playSound('tick'); }
+    else if (state.timeLeft <= 10) { fg.classList.add('warning'); }
+
+    if (state.timeLeft <= 0) { clearInterval(state.timer); handleAnswer(-1); }
+  }, 1000);
+}
+
+function handleAnswer(selected) {
+  clearInterval(state.timer);
+  const q = state.questions[state.current];
+  const buttons = document.querySelectorAll('.option');
+  buttons.forEach(b => b.disabled = true);
+
+  if (selected === q.a) {
+    buttons[selected].classList.add('correct');
+    state.score++;
+    state.combo++;
+    if (state.combo > state.maxCombo) state.maxCombo = state.combo;
+    playSound('correct');
+  } else {
+    if (selected >= 0 && buttons[selected]) buttons[selected].classList.add('incorrect');
+    if (buttons[q.a]) buttons[q.a].classList.add('correct');
+    state.combo = 0;
+    state.lives--;
+    playSound('wrong');
+  }
+  setTimeout(() => { state.current++; renderQuestion(); }, 1200);
+}
+
+function useFifty() {
+  if (state.powerups.fifty <= 0) return;
+  state.powerups.fifty--;
+  playSound('click');
+  const q = state.questions[state.current];
+  const wrongs = [0,1,2,3].filter(i => i !== q.a);
+  const toHide = shuffle(wrongs).slice(0, 2);
+  const optionEls = document.querySelectorAll('.option');
+  toHide.forEach(i => { if (optionEls[i]) optionEls[i].classList.add('hidden'); });
+  const btn = document.getElementById('pw-fifty');
+  btn.disabled = true;
+  btn.querySelector('.count').textContent = state.powerups.fifty;
+}
+
+function useSkip() {
+  if (state.powerups.skip <= 0) return;
+  state.powerups.skip--;
+  playSound('click');
+  clearInterval(state.timer);
+  state.current++;
+  renderQuestion();
+}
+
+/* ============ RÉSULTAT DE PARTIE ============ */
+async function saveScore(entry) {
+  const list = await storageGet('bible-quiz:scores', []);
+  list.push(entry);
+  await storageSet('bible-quiz:scores', list);
+}
+
+async function showResult() {
+  clearInterval(state.timer);
+  state.screen = 'result';
+  const total = state.current;
+  const pct = total ? Math.round(100 * state.score / total) : 0;
+  const perfect = pct === 100 && total > 0;
+
+  await saveScore({
+    name: state.playerName,
+    score: state.score,
+    total: total,
+    cat: state.category,
+    date: new Date().toISOString(),
+  });
+
+  let hexColor = '#22c55e', msg = 'Parfait ! 🎉';
+  if (pct < 100 && pct >= 80) { msg = 'Excellent !'; }
+  else if (pct >= 60) { msg = 'Bien joué !'; hexColor = '#f59e0b'; }
+  else if (pct >= 40) { msg = 'Pas mal !'; hexColor = '#f59e0b'; }
+  else { msg = 'Continue à apprendre !'; hexColor = '#ef4444'; }
+
+  app.innerHTML = `
+    <div class="container">
+      <h1>${perfect ? '🏆 VICTOIRE !' : '📊 Résultat'}</h1>
+      <div class="result-circle">
+        <svg viewBox="0 0 100 100">
+          <circle class="bg" cx="50" cy="50" r="45"/>
+          <circle class="fg" id="res-fg" cx="50" cy="50" r="45" stroke="${hexColor}" stroke-dasharray="283" stroke-dashoffset="283"/>
+        </svg>
+        <div class="pct" style="color:${hexColor}">${pct}%</div>
+      </div>
+      <p style="text-align:center;font-size:1.2rem;font-weight:600;margin:10px 0; color: var(--text);">${msg}</p>
+      <p style="text-align:center;color:var(--text-dim)">${state.score} / ${total} bonnes réponses</p>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="value">${state.score}</div><div class="label">✅ Correctes</div></div>
+        <div class="stat-card"><div class="value">🔥 ${state.maxCombo}</div><div class="label">Combo max</div></div>
+        <div class="stat-card"><div class="value">${state.lives}/3</div><div class="label">❤️ Vies</div></div>
+      </div>
+      <div class="btn-grid">
+        <button class="btn btn-success btn-full" id="replay-btn">🔄 Rejouer</button>
+        <button class="btn" id="lb-res-btn">🏆 Classement</button>
+        <button class="btn" id="home-res-btn">🏠 Accueil</button>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    const fg = document.getElementById('res-fg');
+    if (fg) fg.style.strokeDashoffset = 283 * (1 - pct / 100);
+  }, 100);
+  if (perfect) playSound('win');
+
+  document.getElementById('replay-btn').addEventListener('click', () => {
+    state.screen = 'tabs';
+    state.tab = 'jouer';
+    startGame();
+  });
+  document.getElementById('lb-res-btn').addEventListener('click', () => {
+    state.screen = 'tabs';
+    state.tab = 'classement';
+    renderApp();
+  });
+  document.getElementById('home-res-btn').addEventListener('click', () => {
+    state.screen = 'tabs';
+    state.tab = 'jouer';
+    renderApp();
+  });
+}
+
+/* ============ ONGLET : CLASSEMENT ============ */
+async function renderLeaderboardTab() {
+  app.innerHTML = `<div class="container"><h1>📖 Bible Quiz Deluxe</h1>${renderTabBar()}<p style="text-align:center; color: var(--text-dim);">⏳ Chargement du classement...</p></div>`;
+  bindTabBar();
+
+  const scores = await storageGet('bible-quiz:scores', []);
+  const sorted = scores.slice().sort((a, b) => (b.score / b.total) - (a.score / a.total) || b.score - a.score);
+
+  let rowsHtml;
+  if (sorted.length === 0) {
+    rowsHtml = `<p style="text-align:center;color:var(--text-dim)">Aucun score pour le moment. Joue une partie pour apparaître ici !</p>`;
+  } else {
+    const medals = ['🥇','🥈','🥉'];
+    rowsHtml = sorted.slice(0, 10).map((s, i) => {
+      const pct = s.total ? Math.round(100 * s.score / s.total) : 0;
+      const rank = i < 3 ? medals[i] : (i + 1);
+      const catClass = (s.cat || 'MIX').toLowerCase();
+      return `<div class="lb-row ${i < 3 ? `top-${i+1}` : ''}">
+        <div class="lb-rank">${rank}</div>
+        <div><div class="lb-name">${escapeHtml(s.name)}</div><div class="lb-date">${escapeHtml((s.date || '').split('T')[0])} • <span class="badge badge-${catClass}">${escapeHtml(s.cat || 'MIX')}</span></div></div>
+        <div class="lb-score">${s.score}/${s.total}</div>
+        <div style="color:var(--accent);font-weight:700">${pct}%</div>
+      </div>`;
+    }).join('');
+  }
+
+  // --- Section "Mes résultats", fusionnée dans le même onglet ---
+  let statsHtml = '';
+  if (!state.playerName) {
+    statsHtml = `<p class="error-msg">Joue une partie pour voir apparaître tes statistiques personnelles ici.</p>`;
+  } else {
+    const mine = scores.filter(s => s.name === state.playerName);
+    const games = mine.length;
+    const totalScore = mine.reduce((sum, s) => sum + s.score, 0);
+    const totalQuestions = mine.reduce((sum, s) => sum + s.total, 0);
+    const avgPct = totalQuestions ? Math.round(100 * totalScore / totalQuestions) : 0;
+    const bestPct = games ? Math.max(...mine.map(s => s.total ? Math.round(100 * s.score / s.total) : 0)) : 0;
+
+    statsHtml = `
+      <div class="stats-grid">
+        <div class="stat-card"><div class="value">${games}</div><div class="label">🎮 Parties</div></div>
+        <div class="stat-card"><div class="value">${avgPct}%</div><div class="label">📈 Moyenne</div></div>
+        <div class="stat-card"><div class="value">${bestPct}%</div><div class="label">🏆 Record</div></div>
+      </div>
+      <div class="stats-grid stats-grid-2">
+        <div class="stat-card"><div class="value">${totalScore}</div><div class="label">✅ Total bonnes réponses</div></div>
+        <div class="stat-card"><div class="value">${totalQuestions}</div><div class="label">📝 Total questions</div></div>
+      </div>
+    `;
+  }
+
+  app.innerHTML = `
+    <div class="container">
+      <h1>📖 Bible Quiz Deluxe</h1>
+      ${renderTabBar()}
+
+      <h3 style="margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">🏆 Classement général</h3>
+      <div class="leaderboard">${rowsHtml}</div>
+
+      <h3 style="margin: 24px 0 12px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">📊 Mes résultats${state.playerName ? ` — ${escapeHtml(state.playerName)}` : ''}</h3>
+      ${statsHtml}
+    </div>
+  `;
+  bindTabBar();
+}
+
+/* ============ INITIALISATION ============ */
+async function init() {
+  try {
+    state.playerName = await storageGet('bible-quiz:playerName', '');
+    state.theme = await storageGet('bible-quiz:theme', 'dark');
+  } catch (e) {
+    /* valeurs par défaut déjà en place dans state */
+  }
+  applyTheme();
+  renderApp();
+}
+
+init();
+</script>
+</body>
+</html>
