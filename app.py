@@ -1,12 +1,11 @@
 from flask import Flask, jsonify, request, send_from_directory
-import sqlite3
 import random
 import os
-from pathlib import Path
-from datetime import datetime
+
+import db
 
 app = Flask(__name__, static_folder='.', static_url_path='')
-DB_PATH = Path("scores.db")
+db.init_db()
 
 # Données du quiz (nettoyées des espaces superflus)
 QUESTIONS = [
@@ -248,19 +247,6 @@ QUESTIONS = [
 ]
 LETTERS = ["a", "b", "c", "d"]
 
-def init_db():
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS scores (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                player_name TEXT NOT NULL,
-                score INTEGER NOT NULL,
-                total_questions INTEGER NOT NULL,
-                played_at TEXT NOT NULL
-            )
-        """)
-        conn.commit()
-
 @app.route('/')
 def home():
     return send_from_directory('.', 'index.html')
@@ -321,33 +307,58 @@ def api_questions():
 
 @app.route('/api/scores', methods=['GET'])
 def api_get_scores():
-    """Retourne le top 10 des scores."""
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute("""
-            SELECT player_name, score, total_questions, played_at
-            FROM scores
-            ORDER BY (CAST(score AS REAL) / total_questions) DESC, score DESC, played_at DESC
-            LIMIT 10
-        """)
-        rows = cursor.fetchall()
+    """Retourne le top 10 des scores (classement général, tous joueurs confondus)."""
+    rows = db.get_leaderboard(limit=10)
     return jsonify([{
-        'player_name': r[0], 'score': r[1], 'total': r[2], 'played_at': r[3]
+        'player_name': r['name'], 'score': r['score'], 'total': r['total'],
+        'category': r['cat'], 'played_at': r['date']
     } for r in rows])
 
 @app.route('/api/scores', methods=['POST'])
 def api_save_score():
-    """Sauvegarde un nouveau score."""
-    data = request.json
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("""
-            INSERT INTO scores (player_name, score, total_questions, played_at)
-            VALUES (?, ?, ?, ?)
-        """, (data['player_name'], data['score'], data['total_questions'], datetime.now().isoformat(timespec="seconds")))
-        conn.commit()
+    """Sauvegarde un nouveau score. Chaque partie terminée est enregistrée
+    immédiatement, y compris la toute première partie d'un joueur : c'est ce
+    qui garantit qu'il apparaisse dans le classement dès sa première partie."""
+    data = request.json or {}
+    player_name = (data.get('player_name') or '').strip()
+    if not player_name:
+        return jsonify({"status": "error", "message": "player_name manquant"}), 400
+    try:
+        score = int(data['score'])
+        total_questions = int(data['total_questions'])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"status": "error", "message": "score/total_questions invalides"}), 400
+
+    mode = data.get('mode')
+    lives_used = 0
+    if mode == 'survival' and 'lives' in data:
+        try:
+            lives_used = max(0, 3 - int(data['lives']))
+        except (TypeError, ValueError):
+            lives_used = 0
+
+    db.save_score(player_name, score, total_questions, data.get('category'), lives_used)
     return jsonify({"status": "success"})
 
+@app.route('/api/scores/mine', methods=['GET'])
+def api_my_scores():
+    """Retourne les statistiques d'un joueur donné, même s'il n'a joué qu'une
+    seule partie."""
+    player_name = (request.args.get('player') or '').strip()
+    if not player_name:
+        return jsonify({"status": "error", "message": "player manquant"}), 400
+
+    stats = db.get_player_stats(player_name)
+    return jsonify({
+        'player_name': player_name,
+        'games': stats['games'],
+        'avg_pct': stats['avg_pct'],
+        'best_pct': stats['best_pct'],
+        'total_score': stats['total_score'],
+        'total_questions': stats['total_questions'],
+    })
+
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get('PORT', 5000))
     debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
     print(f"🚀 Serveur démarré sur http://0.0.0.0:{port}")

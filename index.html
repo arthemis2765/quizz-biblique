@@ -547,24 +547,51 @@ const QUESTIONS_DB = [
   { q: "Quel beau-père de Moïse, prêtre de Madian, lui conseille de déléguer la justice à d'autres chefs ?", o: ["Jéthro", "Réuel", "Hobab", "Balaam"], a: 0, cat: "PH" },
   { q: "Quel apôtre remplace Judas Iscariote après sa mort, choisi par tirage au sort parmi les disciples ?", o: ["Matthias", "Barnabas", "Silas", "Apollos"], a: 0, cat: "PH" },
 ];
+QUESTIONS_DB.forEach((q, i) => { q.id = i; });
 
-/* ============ STOCKAGE PERSISTANT (remplace localStorage) ============ */
+/* ============ STOCKAGE LOCAL (préférences uniquement : nom, thème) ============ */
 async function storageGet(key, fallback) {
   try {
-    if (!window.storage || typeof window.storage.get !== 'function') return fallback;
-    const res = await window.storage.get(key, false);
-    return res && res.value !== undefined ? JSON.parse(res.value) : fallback;
+    const raw = localStorage.getItem(key);
+    return raw !== null ? JSON.parse(raw) : fallback;
   } catch (e) {
     return fallback;
   }
 }
 async function storageSet(key, value) {
   try {
-    if (!window.storage || typeof window.storage.set !== 'function') return;
-    await window.storage.set(key, JSON.stringify(value), false);
+    localStorage.setItem(key, JSON.stringify(value));
   } catch (e) {
     /* stockage indisponible : on continue sans bloquer le jeu */
   }
+}
+
+/* ============ API SERVEUR (scores/classement partagés entre joueurs) ============ */
+async function apiSaveScore(entry) {
+  const res = await fetch('/api/scores', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      player_name: entry.name,
+      score: entry.score,
+      total_questions: entry.total,
+      category: entry.cat,
+      mode: entry.mode,
+      lives: entry.lives,
+    }),
+  });
+  if (!res.ok) throw new Error('Échec de la sauvegarde du score');
+  return res.json();
+}
+async function apiGetLeaderboard() {
+  const res = await fetch('/api/scores');
+  if (!res.ok) throw new Error('Échec du chargement du classement');
+  return res.json();
+}
+async function apiGetMyStats(playerName) {
+  const res = await fetch(`/api/scores/mine?player=${encodeURIComponent(playerName)}`);
+  if (!res.ok) throw new Error('Échec du chargement des statistiques');
+  return res.json();
 }
 
 /* ============ ÉTAT GLOBAL ============ */
@@ -641,6 +668,23 @@ function shuffle(arr) {
 function questionsForCategory(cat) {
   if (cat === 'MIX') return QUESTIONS_DB;
   return QUESTIONS_DB.filter(q => q.cat === cat);
+}
+
+const QUESTIONS_PER_ROUND = 10;
+
+function seenKey(playerName, category, mode) {
+  return `bible-quiz:seen:${playerName}:${category}:${mode}`;
+}
+async function getSeenIds(playerName, category, mode) {
+  return await storageGet(seenKey(playerName, category, mode), []);
+}
+async function addSeenIds(playerName, category, mode, ids) {
+  const current = await getSeenIds(playerName, category, mode);
+  const merged = Array.from(new Set([...current, ...ids]));
+  await storageSet(seenKey(playerName, category, mode), merged);
+}
+async function resetSeenIds(playerName, category, mode) {
+  await storageSet(seenKey(playerName, category, mode), []);
 }
 
 function categoryLabel(cat) {
@@ -745,13 +789,24 @@ async function startGame() {
   await storageSet('bible-quiz:playerName', state.playerName);
   playSound('click');
 
-  const pool = shuffle(questionsForCategory(state.category));
-  if (pool.length === 0) {
+  const fullPool = questionsForCategory(state.category);
+  if (fullPool.length === 0) {
     errorBox.innerHTML = `<p class="error-msg">Aucune question dans cette catégorie.</p>`;
     return;
   }
 
-  state.questions = state.mode === 'classic' ? pool.slice(0, Math.min(10, pool.length)) : pool;
+  const seenIds = await getSeenIds(state.playerName, state.category, state.mode);
+  const remaining = fullPool.filter(q => !seenIds.includes(q.id));
+
+  if (remaining.length === 0) {
+    renderCategoryFinished(fullPool.length);
+    return;
+  }
+
+  const selected = shuffle(remaining).slice(0, Math.min(QUESTIONS_PER_ROUND, remaining.length));
+  await addSeenIds(state.playerName, state.category, state.mode, selected.map(q => q.id));
+
+  state.questions = selected;
   state.current = 0;
   state.score = 0;
   state.lives = 3;
@@ -760,6 +815,35 @@ async function startGame() {
   state.powerups = { fifty: 1, skip: 1 };
   state.screen = 'playing';
   renderQuestion();
+}
+
+/* ============ ÉCRAN : CATÉGORIE TERMINÉE ============ */
+function renderCategoryFinished(totalInCategory) {
+  app.innerHTML = `
+    <div class="container">
+      <h1>🎉 Catégorie terminée !</h1>
+      <p style="text-align:center;color:var(--text-dim);margin:16px 0;">
+        Tu as répondu à toutes les questions de la catégorie <strong>${escapeHtml(categoryLabel(state.category))}</strong>
+        en mode <strong>${state.mode === 'survival' ? 'Survie' : 'Classique'}</strong>
+        (${totalInCategory} questions au total).
+      </p>
+      <p style="text-align:center;color:var(--text-dim);">Veux-tu rejouer depuis le début de cette catégorie ?</p>
+      <div class="btn-grid" style="margin-top:20px;">
+        <button class="btn btn-success btn-full" id="restart-cat-btn">🔄 Rejouer cette catégorie</button>
+        <button class="btn" id="home-cat-btn">🏠 Accueil</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('restart-cat-btn').addEventListener('click', async () => {
+    await resetSeenIds(state.playerName, state.category, state.mode);
+    startGame();
+  });
+  document.getElementById('home-cat-btn').addEventListener('click', () => {
+    state.screen = 'tabs';
+    state.tab = 'jouer';
+    renderApp();
+  });
 }
 
 /* ============ ONGLET : CATÉGORIE ============ */
@@ -925,7 +1009,7 @@ function handleAnswer(selected) {
     if (selected >= 0 && buttons[selected]) buttons[selected].classList.add('incorrect');
     if (buttons[q.a]) buttons[q.a].classList.add('correct');
     state.combo = 0;
-    state.lives--;
+    if (state.mode === 'survival') state.lives--;
     playSound('wrong');
   }
   setTimeout(() => { state.current++; renderQuestion(); }, 1200);
@@ -955,12 +1039,6 @@ function useSkip() {
 }
 
 /* ============ RÉSULTAT DE PARTIE ============ */
-async function saveScore(entry) {
-  const list = await storageGet('bible-quiz:scores', []);
-  list.push(entry);
-  await storageSet('bible-quiz:scores', list);
-}
-
 async function showResult() {
   clearInterval(state.timer);
   state.screen = 'result';
@@ -968,13 +1046,20 @@ async function showResult() {
   const pct = total ? Math.round(100 * state.score / total) : 0;
   const perfect = pct === 100 && total > 0;
 
-  await saveScore({
-    name: state.playerName,
-    score: state.score,
-    total: total,
-    cat: state.category,
-    date: new Date().toISOString(),
-  });
+  try {
+    await apiSaveScore({
+      name: state.playerName,
+      score: state.score,
+      total: total,
+      cat: state.category,
+      mode: state.mode,
+      lives: state.lives,
+    });
+  } catch (e) {
+    /* Le score n'a pas pu être envoyé au serveur (réseau hors-ligne, etc.) :
+       on n'empêche pas l'affichage du résultat, mais il ne sera pas au classement. */
+    console.error(e);
+  }
 
   let hexColor = '#22c55e', msg = 'Parfait ! 🎉';
   if (pct < 100 && pct >= 80) { msg = 'Excellent !'; }
@@ -997,7 +1082,9 @@ async function showResult() {
       <div class="stats-grid">
         <div class="stat-card"><div class="value">${state.score}</div><div class="label">✅ Correctes</div></div>
         <div class="stat-card"><div class="value">🔥 ${state.maxCombo}</div><div class="label">Combo max</div></div>
-        <div class="stat-card"><div class="value">${state.lives}/3</div><div class="label">❤️ Vies</div></div>
+        ${state.mode === 'survival'
+          ? `<div class="stat-card"><div class="value">${state.lives}/3</div><div class="label">❤️ Vies</div></div>`
+          : `<div class="stat-card"><div class="value">${state.score}/${total}</div><div class="label">🎯 Précision</div></div>`}
       </div>
       <div class="btn-grid">
         <button class="btn btn-success btn-full" id="replay-btn">🔄 Rejouer</button>
@@ -1035,8 +1122,12 @@ async function renderLeaderboardTab() {
   app.innerHTML = `<div class="container"><h1>📖 Bible Quiz Deluxe</h1>${renderTabBar()}<p style="text-align:center; color: var(--text-dim);">⏳ Chargement du classement...</p></div>`;
   bindTabBar();
 
-  const scores = await storageGet('bible-quiz:scores', []);
-  const sorted = scores.slice().sort((a, b) => (b.score / b.total) - (a.score / a.total) || b.score - a.score);
+  let sorted = [];
+  try {
+    sorted = await apiGetLeaderboard();
+  } catch (e) {
+    console.error(e);
+  }
 
   let rowsHtml;
   if (sorted.length === 0) {
@@ -1046,10 +1137,10 @@ async function renderLeaderboardTab() {
     rowsHtml = sorted.slice(0, 10).map((s, i) => {
       const pct = s.total ? Math.round(100 * s.score / s.total) : 0;
       const rank = i < 3 ? medals[i] : (i + 1);
-      const catClass = (s.cat || 'MIX').toLowerCase();
+      const catClass = (s.category || 'MIX').toLowerCase();
       return `<div class="lb-row ${i < 3 ? `top-${i+1}` : ''}">
         <div class="lb-rank">${rank}</div>
-        <div><div class="lb-name">${escapeHtml(s.name)}</div><div class="lb-date">${escapeHtml((s.date || '').split('T')[0])} • <span class="badge badge-${catClass}">${escapeHtml(s.cat || 'MIX')}</span></div></div>
+        <div><div class="lb-name">${escapeHtml(s.player_name)}</div><div class="lb-date">${escapeHtml((s.played_at || '').split('T')[0])} • <span class="badge badge-${catClass}">${escapeHtml(s.category || 'MIX')}</span></div></div>
         <div class="lb-score">${s.score}/${s.total}</div>
         <div style="color:var(--accent);font-weight:700">${pct}%</div>
       </div>`;
@@ -1061,24 +1152,23 @@ async function renderLeaderboardTab() {
   if (!state.playerName) {
     statsHtml = `<p class="error-msg">Joue une partie pour voir apparaître tes statistiques personnelles ici.</p>`;
   } else {
-    const mine = scores.filter(s => s.name === state.playerName);
-    const games = mine.length;
-    const totalScore = mine.reduce((sum, s) => sum + s.score, 0);
-    const totalQuestions = mine.reduce((sum, s) => sum + s.total, 0);
-    const avgPct = totalQuestions ? Math.round(100 * totalScore / totalQuestions) : 0;
-    const bestPct = games ? Math.max(...mine.map(s => s.total ? Math.round(100 * s.score / s.total) : 0)) : 0;
-
-    statsHtml = `
-      <div class="stats-grid">
-        <div class="stat-card"><div class="value">${games}</div><div class="label">🎮 Parties</div></div>
-        <div class="stat-card"><div class="value">${avgPct}%</div><div class="label">📈 Moyenne</div></div>
-        <div class="stat-card"><div class="value">${bestPct}%</div><div class="label">🏆 Record</div></div>
-      </div>
-      <div class="stats-grid stats-grid-2">
-        <div class="stat-card"><div class="value">${totalScore}</div><div class="label">✅ Total bonnes réponses</div></div>
-        <div class="stat-card"><div class="value">${totalQuestions}</div><div class="label">📝 Total questions</div></div>
-      </div>
-    `;
+    try {
+      const mine = await apiGetMyStats(state.playerName);
+      statsHtml = `
+        <div class="stats-grid">
+          <div class="stat-card"><div class="value">${mine.games}</div><div class="label">🎮 Parties</div></div>
+          <div class="stat-card"><div class="value">${mine.avg_pct}%</div><div class="label">📈 Moyenne</div></div>
+          <div class="stat-card"><div class="value">${mine.best_pct}%</div><div class="label">🏆 Record</div></div>
+        </div>
+        <div class="stats-grid stats-grid-2">
+          <div class="stat-card"><div class="value">${mine.total_score}</div><div class="label">✅ Total bonnes réponses</div></div>
+          <div class="stat-card"><div class="value">${mine.total_questions}</div><div class="label">📝 Total questions</div></div>
+        </div>
+      `;
+    } catch (e) {
+      console.error(e);
+      statsHtml = `<p class="error-msg">Impossible de charger tes statistiques pour le moment.</p>`;
+    }
   }
 
   app.innerHTML = `
