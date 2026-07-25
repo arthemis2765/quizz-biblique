@@ -159,11 +159,18 @@ def get_leaderboard(limit=10):
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(
                 """
-                SELECT player_name AS name, score, total_questions AS total,
-                       category AS cat, played_at AS date
-                FROM scores
-                ORDER BY (score::float / NULLIF(total_questions, 0)) DESC,
-                         score DESC, played_at DESC
+                SELECT name, score, total, cat, date
+                FROM (
+                    SELECT DISTINCT ON (player_name)
+                           player_name AS name, score, total_questions AS total,
+                           category AS cat, played_at AS date
+                    FROM scores
+                    ORDER BY player_name,
+                             (score::float / NULLIF(total_questions, 0)) DESC,
+                             score DESC, played_at DESC
+                ) best_per_player
+                ORDER BY (score::float / NULLIF(total, 0)) DESC,
+                         score DESC, date DESC
                 LIMIT %s
                 """,
                 (limit,),
