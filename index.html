@@ -741,7 +741,7 @@ function renderApp() {
 function renderHomeTab() {
   app.innerHTML = `
     <div class="container">
-      <h1>📖 Bible Quiz Deluxe</h1>
+      <h1>📖 Bible Quiz</h1>
       <p class="subtitle">Teste tes connaissances avec style ✨</p>
       ${renderTabBar()}
 
@@ -1119,7 +1119,7 @@ async function showResult() {
 
 /* ============ ONGLET : CLASSEMENT ============ */
 async function renderLeaderboardTab() {
-  app.innerHTML = `<div class="container"><h1>📖 Bible Quiz Deluxe</h1>${renderTabBar()}<p style="text-align:center; color: var(--text-dim);">⏳ Chargement du classement...</p></div>`;
+  app.innerHTML = `<div class="container"><h1>📖 Bible Quiz </h1>${renderTabBar()}<p style="text-align:center; color: var(--text-dim);">⏳ Chargement du classement...</p></div>`;
   bindTabBar();
 
   let sorted = [];
@@ -1173,7 +1173,7 @@ async function renderLeaderboardTab() {
 
   app.innerHTML = `
     <div class="container">
-      <h1>📖 Bible Quiz Deluxe</h1>
+      <h1>📖 Bible Quiz</h1>
       ${renderTabBar()}
 
       <h3 style="margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">🏆 Classement général</h3>

@@ -1,4 +1,4 @@
--- Schéma PostgreSQL pour Bible Quiz Deluxe.
+-- Schéma PostgreSQL pour Bible Quiz.
 -- Exécuté automatiquement par db.init_db() au démarrage du serveur.
 
 CREATE TABLE IF NOT EXISTS players (

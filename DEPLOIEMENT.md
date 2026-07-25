@@ -1,4 +1,4 @@
-# Déployer Bible Quiz Deluxe (PostgreSQL)
+# Déployer Bible Quiz  (PostgreSQL)
 
 ## Fichiers du projet
 - `app.py` — serveur Flask (routes + questions)
