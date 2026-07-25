@@ -1,4 +1,4 @@
-# Déployer Bible Quiz  (PostgreSQL)
+# Déployer Bible Quiz (PostgreSQL)
 
 ## Fichiers du projet
 - `app.py` — serveur Flask (routes + questions)
@@ -6,10 +6,10 @@
 - `schema.sql` — tables créées automatiquement au démarrage
 - `index.html` — l'application (servie par Flask)
 - `requirements.txt` — dépendances Python
-- `Procfile` — commande de lancement pour Render / Railway / Heroku
+- `Procfile` — commande de lancement pour Railway
 
 ## 1. Créer une base PostgreSQL
-Sur la plupart des hébergeurs (Render, Railway, Supabase, Neon...), tu crées
+Sur la plupart des hébergeurs (Railway, Supabase, Neon...), tu crées
 une base PostgreSQL et tu récupères son `DATABASE_URL` (commence par
 `postgresql://...` ou `postgres://...`).
 

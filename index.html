@@ -759,7 +759,7 @@ function renderHomeTab() {
         <div class="cat-btn ${state.mode==='survival'?'active':''}" data-mode="survival"><span class="icon">❤️</span>Survie<br><small style="opacity:0.7">3 vies max</small></div>
       </div>
 
-      <button class="btn btn-success btn-full" id="start-btn" style="width:100%; margin-top: 10px;">🚀 Commencer</button>
+      <button class="btn btn-success btn-full" id="start-btn" style="width:100%; margin-top: 10px;"> Commencer</button>
     </div>
   `;
 
@@ -1179,7 +1179,7 @@ async function renderLeaderboardTab() {
       <h3 style="margin: 0 0 12px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">🏆 Classement général</h3>
       <div class="leaderboard">${rowsHtml}</div>
 
-      <h3 style="margin: 24px 0 12px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">📊 Mes résultats${state.playerName ? ` — ${escapeHtml(state.playerName)}` : ''}</h3>
+      <h3 style="margin: 24px 0 12px; color: var(--text-dim); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px;">Mes résultats${state.playerName ? ` — ${escapeHtml(state.playerName)}` : ''}</h3>
       ${statsHtml}
     </div>
   `;
