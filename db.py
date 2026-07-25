@@ -1,4 +1,4 @@
-"""Accès PostgreSQL pour Bible Quiz Deluxe."""
+"""Accès PostgreSQL pour Bible Quiz ."""
 
 import json
 import os
