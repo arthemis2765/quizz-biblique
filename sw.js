@@ -1,6 +1,6 @@
 // Service worker Bible Quiz — permet de jouer hors-ligne après une première visite.
 // Incrémenter CACHE_VERSION à chaque changement de index.html/CSS/JS pour forcer la mise à jour.
-const CACHE_VERSION = 'bible-quiz-v2';
+const CACHE_VERSION = 'bible-quiz-v3';
 const APP_SHELL = ['/', '/index.html', '/manifest.json', '/icon-192.png', '/icon-512.png'];
 
 self.addEventListener('install', (event) => {

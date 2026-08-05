@@ -315,13 +315,28 @@ input::placeholder { color: var(--text-dim); }
 <script>
 /* ============ BANQUE DE QUESTIONS (via l'API backend, plus de duplication) ============ */
 let CATEGORY_COUNTS = { AT: 0, NT: 0, PH: 0, MIX: 0 };
+let categoriesLoaded = false; // false tant qu'on n'a pas une réponse fiable (même via le cache SW)
+
+/* Erreur enrichie : 'offline' = pas de réseau ET rien en cache pour cette requête,
+   'network' = requête refusée/en échec alors qu'on est en ligne (souci serveur). */
+function connectivityError(message) {
+  const err = new Error(message);
+  err.kind = navigator.onLine ? 'network' : 'offline';
+  return err;
+}
 
 async function apiGetCategories() {
-  const res = await fetch('/api/categories');
-  if (!res.ok) throw new Error('Échec du chargement des catégories');
+  let res;
+  try {
+    res = await fetch('/api/categories');
+  } catch (e) {
+    throw connectivityError('Échec du chargement des catégories');
+  }
+  if (!res.ok) throw connectivityError('Échec du chargement des catégories');
   const list = await res.json();
   const counts = {};
   list.forEach(c => { counts[c.code] = c.count; });
+  categoriesLoaded = true;
   return counts;
 }
 
@@ -335,10 +350,27 @@ async function apiGetQuestions(category, limit, excludeIds, playerName) {
   const params = new URLSearchParams({ category, limit: String(limit) });
   if (excludeIds && excludeIds.length) params.set('exclude', excludeIds.join(','));
   if (playerName) params.set('player', playerName);
-  const res = await fetch(`/api/questions?${params.toString()}`);
-  if (!res.ok) throw new Error('Échec du chargement des questions');
+  let res;
+  try {
+    res = await fetch(`/api/questions?${params.toString()}`);
+  } catch (e) {
+    throw connectivityError('Échec du chargement des questions');
+  }
+  if (!res.ok) throw connectivityError('Échec du chargement des questions');
   const list = await res.json();
   return list.map(mapApiQuestion);
+}
+
+/* Précharge les 4 catégories dans le cache du service worker (une requête suffit par
+   catégorie : la clé de cache dans sw.js ignore déjà limit/exclude/player).
+   Silencieux : si ça échoue, on retentera à la prochaine visite en ligne. */
+async function preloadCategoriesForOffline(counts) {
+  if (!('serviceWorker' in navigator) || !navigator.onLine) return;
+  const cats = ['AT', 'NT', 'PH', 'MIX'];
+  await Promise.all(cats.map(cat => {
+    const limit = Math.min(counts[cat] || 30, 60); // assez de variété sans payload énorme
+    return fetch(`/api/questions?category=${cat}&limit=${limit}`).catch(() => {});
+  }));
 }
 
 async function apiRecordAnswer(playerName, questionId, correct) {
@@ -590,7 +622,11 @@ async function startGame() {
 
   const totalInCategory = CATEGORY_COUNTS[state.category] || 0;
   if (totalInCategory === 0) {
-    errorBox.innerHTML = `<p class="error-msg">Aucune question dans cette catégorie.</p>`;
+    if (!categoriesLoaded) {
+      errorBox.innerHTML = `<p class="error-msg">Tu es hors-ligne et cette catégorie n'a pas encore été mise en cache. Connecte-toi une fois pour pouvoir y jouer ensuite hors-ligne.</p>`;
+    } else {
+      errorBox.innerHTML = `<p class="error-msg">Aucune question dans cette catégorie.</p>`;
+    }
     return;
   }
 
@@ -600,7 +636,11 @@ async function startGame() {
   try {
     selected = await apiGetQuestions(state.category, QUESTIONS_PER_ROUND, seenIds, state.playerName);
   } catch (e) {
-    errorBox.innerHTML = `<p class="error-msg">Impossible de charger les questions (vérifie ta connexion).</p>`;
+    if (e.kind === 'offline') {
+      errorBox.innerHTML = `<p class="error-msg">Tu es hors-ligne et cette catégorie n'a pas encore été mise en cache. Connecte-toi une fois pour pouvoir y jouer ensuite hors-ligne.</p>`;
+    } else {
+      errorBox.innerHTML = `<p class="error-msg">Impossible de charger les questions (problème serveur, réessaie dans un instant).</p>`;
+    }
     return;
   }
 
@@ -1016,6 +1056,11 @@ async function init() {
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/sw.js').catch(() => {});
+    if (categoriesLoaded) {
+      navigator.serviceWorker.ready
+        .then(() => preloadCategoriesForOffline(CATEGORY_COUNTS))
+        .catch(() => {});
+    }
   }
 }
 
