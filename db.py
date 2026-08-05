@@ -183,6 +183,58 @@ def get_leaderboard(limit=10):
         _put_conn(conn)
 
 
+# --------------------------------------------------------------------------
+# Répétition espacée (questions ratées par joueur)
+# --------------------------------------------------------------------------
+def record_answer(player_name, question_id, correct):
+    """Met à jour le suivi de répétition espacée pour une question donnée.
+
+    Une réponse fausse augmente wrong_count (la question reviendra plus tôt).
+    Deux bonnes réponses d'affilée réinitialisent wrong_count (question « maîtrisée »)."""
+    conn = _get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                INSERT INTO wrong_answers (player_name, question_id, wrong_count, correct_streak)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (player_name, question_id) DO UPDATE SET
+                    wrong_count = CASE
+                        WHEN %s THEN
+                            CASE WHEN wrong_answers.correct_streak + 1 >= 2 THEN 0
+                                 ELSE wrong_answers.wrong_count END
+                        ELSE wrong_answers.wrong_count + 1
+                    END,
+                    correct_streak = CASE WHEN %s THEN wrong_answers.correct_streak + 1 ELSE 0 END,
+                    updated_at = NOW()
+                """,
+                (player_name, question_id, 0 if correct else 1, 0 if correct else 0,
+                 correct, correct),
+            )
+        conn.commit()
+    finally:
+        _put_conn(conn)
+
+
+def get_weak_question_ids(player_name):
+    """Retourne les IDs des questions à faire revenir en priorité pour ce joueur
+    (déjà ratées et pas encore « maîtrisées »), du plus raté au moins raté."""
+    conn = _get_conn()
+    try:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(
+                """
+                SELECT question_id FROM wrong_answers
+                WHERE player_name = %s AND wrong_count > 0
+                ORDER BY wrong_count DESC, updated_at ASC
+                """,
+                (player_name,),
+            )
+            return [r["question_id"] for r in cur.fetchall()]
+    finally:
+        _put_conn(conn)
+
+
 def get_player_stats(player_name):
     conn = _get_conn()
     try:
